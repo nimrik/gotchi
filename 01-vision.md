@@ -48,8 +48,9 @@ for teens+") — worth pinning down before writing store copy or finalizing char
 |---|---|
 | Cartoon/flat 3D art, generic | Pixel-art world (Celeste-inspired) + stylized 3D creature |
 | Pet plateaus after basic stats are filled | Long-term skill-tree driven evolution, branching creature forms |
-| Ad-heavy, third-party trackers common | Free + IAP, Kids Category-compliant, no behavioral ads/trackers |
+| Ad-heavy, third-party trackers common | Free + IAP, minimal data collection by design |
 | Simple meters, no strategy layer | Needs → automation → skill-tree strategy layer (Clash of Clans-style scaling) |
+| Purely entertainment, no learning value | Two skill-tree branches (Social, Science) are genuine edutainment — language and general-knowledge mini-games woven into progression, not a bolted-on "educational mode" |
 
 ## Team & scope reality check
 
