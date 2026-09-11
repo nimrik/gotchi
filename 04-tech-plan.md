@@ -51,4 +51,3 @@ See `06-monetization-compliance.md` for the full compliance picture.
 - Backend needs: is a lightweight custom backend required (for leaderboards, seasonal content, social
   rankings) or can platform-native services (Game Center / Google Play Games) cover v1?
 - Specific save/sync architecture.
-- Team's current Unity/C# experience level — affects how much learning-curve buffer to build into the roadmap.

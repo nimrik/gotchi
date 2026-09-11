@@ -31,6 +31,17 @@ not a literal 1:1 pixel-to-millimeter target.
 - Recommended split: lean on AI tools for high-volume, lower-stakes 2D assets (icons, backgrounds, item
   variations, UI elements). Treat the 3D creature model + rig/animations as a higher-stakes asset worth
   extra care (possibly a freelance 3D artist) since it's the thing players look at constantly.
+- **Recommended two-tool pipeline for locking and reusing "our" style:**
+  1. **Concepting/style-lock phase:** use Gemini 2.5 Flash Image ("Nano Banana") to explore the
+     look and lock a written style guide (palette, proportions, shading/outline rules) — it's strong at
+     editing/re-posing the *same* character consistently from a reference image, which is exactly what's
+     needed to test "does our style hold up across many creatures/poses" before committing to it.
+  2. **Production phase:** once the style is locked, produce actual game-ready sprites in PixelLab.ai,
+     since it's purpose-built for consistent pixel-art sprite sheets/variations (palette-locked, animation
+     frames) rather than one-off illustrations. Feed it the reference images + written rules from step 1.
+  - This matters a lot for `09-pets-and-emotions.md`'s emotion-state art (585+ planned states across 13
+    creatures) — the whole point of locking a style guide first is to make each new state fast/cheap to
+    produce consistently, rather than re-deriving the look every time.
 
 ## Open questions (needs its own research pass)
 

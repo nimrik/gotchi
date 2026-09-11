@@ -56,6 +56,8 @@ for teens+") — worth pinning down before writing store copy or finalizing char
 
 - First game for both of us; treat this as a real learning project as well as a serious release attempt.
 - Two-person team (you + one colleague on implementation).
+- Confirmed capacity: side-project pace (a few hours/week each), both beginners at Unity/C#. The roadmap
+  should build in a real learning-curve buffer, especially through Phase 1.
 - We want to publish and monetize seriously — not just a portfolio piece — which means compliance,
   polish, and store requirements matter from day one, not as an afterthought.
 

@@ -23,18 +23,16 @@ Status: draft v0.1 — captures core loop decisions; numbers/tuning are placehol
 | **Sport** | Physical stats | Quick tap/reflex mini-games (2D) | Straightforward, fast core-loop-friendly sessions. |
 | **Social** | Language quizzes | Puzzle/matching-style quiz format | Genuine edutainment angle — a real differentiator, not just a flavor branch. Worth highlighting in marketing. |
 | **Warrior** | Combat | PvP, multiplayer arena battles (3D, Brawl Stars-style) | Keep visually stylized/kawaii rather than gritty — mild cartoon-violence framing is fine and expected to land around a 9+ content rating, not a concern outside the Kids Category, but worth keeping intentional rather than accidental. |
-| **Hunter** | Survival/tracking | PvE mini-games, supports co-op | Co-op mode confirmed as a direction — this branch is a natural home for it (e.g. cooperative hunts/expeditions). |
+| **Hunter** | Survival/tracking | PvE mini-games, solo | Singleplayer only — co-op lives in Explorer/Adventure instead (see below), since the two are mechanically distinct (solo PvE vs. co-op-with-a-friend). |
 | **Science** | General knowledge | Puzzle/matching-style quiz format | Second edutainment branch, pairs with Social for a "smart pet" positioning angle. |
 | **Fashion** *(retained from earlier planning)* | Style/cosmetics | Styling/dress-up interactions | Deliberately kept — ties directly into the cosmetics IAP model, making monetization progression-driven rather than a bolted-on shop. |
-
-Open candidate for a 7th branch: an **Explorer/Adventure** branch (world exploration, resource gathering)
-would give co-op an even more natural home alongside Hunter — worth a quick yes/no before finalizing,
-not blocking for now.
+| **Explorer/Adventure** *(7th branch, confirmed)* | World exploration, resource gathering | Co-op PvE (play with a friend vs. enemies) | Dedicated home for co-op — one side (player + friend) against enemies, distinct from Hunter's solo PvE. |
 
 - Branch choices drive the creature's **evolution branch** — this is the long-term differentiation from
-  "pet that never changes." With 6 branches, worth deciding early whether evolution is single-branch-locked
-  (pick one path) or blended (creature reflects a mix of invested branches) — this materially affects both
-  art (how many distinct forms) and tech (state representation).
+  "pet that never changes." **Decided: single-branch-locked** — the creature evolves down whichever one
+  branch the player has invested in most, rather than a blend across branches. Chosen for simpler art
+  scope (one distinct evolved form per branch) and simpler save-state representation, matching the team's
+  beginner Unity/C# capacity.
 - Cost/time curves should scale gradually and mathematically (Clash of Clans town-hall-style scaling),
   designed and tuned only after the core loop is validated in a prototype — don't hand-tune numbers on
   paper before that.
@@ -55,15 +53,24 @@ not blocking for now.
 
 ## Pets
 
-- v1: single pet per player.
+- v1: single pet per player, chosen at start from a roster of 13 species — see `09-pets-and-emotions.md`.
 - Multiple/simultaneous pets, breeding, trading, etc. — explicitly deferred, revisit post-launch.
+
+## Emotional states
+
+- Full emotion taxonomy (10 categories, 45 sub-emotions) locked, each with a unique pixel-art state per
+  creature — see `09-pets-and-emotions.md` for the full list and the art-production scope notes. This is a
+  large art-asset surface; sequencing (which creature first) and variation count per state are still open.
+- Emotion → gameplay-state wiring (what triggers each state) is handled in code by the team, not specified
+  in the design docs.
 
 ## Evolution & progression
 
 - Creature is level-based.
-- Branching evolutions driven by which skill-tree paths the player invests in.
-- Exact branch count, visual distinctiveness per branch, and "how many endings" — open, needs design pass
-  once skill tree categories are locked.
+- Branching evolutions driven by which skill-tree paths the player invests in — **single-branch-locked**:
+  the evolved form reflects the one branch invested in most, not a blend.
+- Visual distinctiveness per branch (7 branches → 7 evolved forms) — open, needs an art pass once the
+  mood board is locked.
 
 ## Mini-games — directions confirmed
 
@@ -71,9 +78,8 @@ not blocking for now.
 - **Multiplayer arena battles (3D, Brawl Stars-style)** — maps to the Warrior branch (PvP).
 - **Puzzle/matching format** — used for both Social (language quizzes) and Science (general knowledge)
   branches; same underlying mini-game structure, different content/question sets.
-- **PvE** — maps to the Hunter branch.
-- **Co-op** — confirmed direction; Hunter (and possibly a future Explorer branch) are the natural home for
-  cooperative play rather than treating it as a fully separate system.
+- **PvE (solo)** — maps to the Hunter branch.
+- **Co-op** — maps to the Explorer/Adventure branch: player + friend on one side against enemies.
 - Not currently planned: rhythm/music mini-games, racing/obstacle mini-games — dropped from consideration
   for now, can revisit post-launch.
 
@@ -87,7 +93,4 @@ not blocking for now.
 
 ## Open questions
 
-- Whether to add a 7th **Explorer/Adventure** branch as a dedicated home for co-op, or fold co-op fully
-  into Hunter.
-- Whether evolution is single-branch-locked or reflects a blend of invested branches.
 - Whether automation tools are IAP-able or purely progression-earned (affects monetization doc).

@@ -12,10 +12,12 @@ These are living drafts (v0.1) meant to be argued with and revised — not final
 - [05 — Monetization & Compliance](05-monetization-compliance.md) — IAP, Apple Kids Category
 - [06 — Roadmap](06-roadmap.md) — phased plan from prototype to soft launch
 - [07 — Apple Compliance Questionnaire](07-apple-compliance-questionnaire.md) — working checklist + decision log for App Store submission
+- [08 — Project Checklist](08-project-checklist.md) — concrete action items mapped to each roadmap phase
+- [09 — Pets & Emotions](09-pets-and-emotions.md) — species roster, emotion taxonomy, art production scope
 
 ## Suggested next step
 
-Phase 0 in the roadmap isn't done yet — the biggest unresolved decisions before a prototype makes sense
-are: the exact basic-needs list and the skill-tree categories. The Kids Category question has been
-provisionally resolved (not opting in for now — see doc 07) but should be revisited once real usage data
-exists.
+Most Phase 0 decisions are now settled (7th Explorer/Adventure branch confirmed, evolution model locked
+to single-branch-locked, team capacity confirmed) — see `08-project-checklist.md`. Remaining open items:
+the art mood board, the internal render resolution (deferred to a device prototype test), and the store
+positioning sketch. None of these block starting Phase 1 (core loop prototype) in Unity.
