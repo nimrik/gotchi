@@ -1,13 +1,13 @@
 # Gotchi — Project Checklist
 
-Status: draft v0.1 — a working checklist tied to the phases in `06-roadmap.md`. Check items off as you go;
+Status: draft v0.2 — a working checklist tied to the phases in `06-roadmap.md`. `[~]` = partially done. Check items off as you go;
 add new ones as decisions get made. This is meant to be edited constantly, not treated as fixed scope.
 
 ## Phase 0 — Foundations
 
 - [x] Vision & differentiation locked (`01-vision.md`)
 - [x] Basic needs finalized: Hunger / Hygiene / Energy / Happiness
-- [x] Skill-tree branches finalized (6): Sport / Social / Warrior / Hunter / Science / Fashion
+- [x] Skill-tree branches finalized (7): Sport / Social / Warrior / Hunter / Science / Nature / Explorer-Adventure (Fashion dropped 2026-09-13)
 - [x] Mini-game types confirmed: tap/reflex, 3D multiplayer arena (PvP), quiz/matching format, PvE, co-op
 - [x] Audience repositioned toward tweens/teens/nostalgic young adults (not primarily under-13)
 - [x] Pet species roster finalized (13): Bunny, Cat, Panda, Red Panda, Seal, Raccoon, Penguin, Fennec,
@@ -24,9 +24,9 @@ add new ones as decisions get made. This is meant to be edited constantly, not t
       simpler save-state representation; matches the team's beginner Unity/C# capacity.
 - [ ] Build the art mood board / concrete references beyond "Celeste-inspired" — left open, needs a
       dedicated reference-gathering session
-- [ ] Lock the internal render resolution for the 2D pixel-art layer — **decided to defer**: build a small
-      test scene at 2–3 candidate resolutions (e.g. 320×180, 384×216) on an actual device before locking,
-      rather than picking on paper
+- [x] Internal render resolution — **decided: the UI renders natively (anti-aliased); only creature sprites are
+      pixel art, resampled to a fixed 112-px grid** (`CreatureSprites.PixelHeight`). The 2D world art, when it
+      comes, should follow the same per-sprite grid rather than a global low-res pass.
 - [x] Assess team weekly time budget and current Unity/C# comfort level, honestly — **confirmed:
       side-project pace (a few hours/week each), both beginners at Unity/C#.** Roadmap should build in a
       real learning-curve buffer, especially through Phase 1.
@@ -35,18 +35,20 @@ add new ones as decisions get made. This is meant to be edited constantly, not t
 
 ## Phase 1 — Core loop prototype
 
-- [ ] Set up the Unity project (version, render pipeline — see `04-tech-plan.md`)
-- [ ] Build a placeholder pet with the 4 basic-need meters (no art polish, primitives/placeholder shapes fine)
-- [ ] Implement manual care interactions for each need
-- [ ] Implement real-time simulation (needs progress while app is closed, not just while open)
+- [x] Set up the Unity project — **Unity 6000.6.0f1, built-in RP + uGUI, iOS build target; the repo is the
+      project.** Compiles with zero errors/warnings, logic smoke test passes (140 checks), `Main.unity` wired.
+      URP deferred to the art phase. See `10-unity-setup.md`.
+- [x] Build a placeholder pet with the 4 basic-need meters — `NeedsSystem`, `HUDController`
+- [x] Implement manual care interactions for each need — `CareActionService` (cooldowns, rescue → gratitude)
+- [x] Implement real-time simulation — `NeedsSystem.ApplyOfflineElapsed` (capped at 36h so the pet never dies)
 - [ ] Internally playtest the 2–3 minute core session — validate it's actually satisfying
 - [ ] Explicitly hold off on: skill tree, monetization, notifications, mini-games (Phase 1 is loop-only)
 
 ## Phase 2 — Progression layer
 
-- [ ] Implement automation mechanics for basic needs (reduce friction, don't remove the care feeling)
-- [ ] Build 1–2 skill-tree branches first (not all 7) to validate the system before full build-out
-- [ ] Implement a first evolution branch point (even one split is enough to validate the concept)
+- [x] Implement automation mechanics for basic needs — `AutomationSystem` (4 unlockable helpers that slow decay)
+- [x] Skill-tree system built for all 7 branches (`SkillTreeSystem`); 5 have playable mini-games, 2 are stubs
+- [x] Implement a first evolution branch point — single-branch lock-in at 500 XP, 5 stages (`SkillTreeSystem`)
 - [ ] Design and tune cost/time scaling curves (Clash of Clans-style) — only after the prototype feel is
       validated, not on paper beforehand
 
@@ -64,14 +66,16 @@ add new ones as decisions get made. This is meant to be edited constantly, not t
 
 ## Phase 4 — Retention & mini-games
 
-- [ ] Build the Sport branch mini-game (tap/reflex, 2D) — likely simplest, good first build
-- [ ] Build the Social + Science quiz/matching mini-game format (shared structure, different content sets)
-- [ ] Build the Hunter branch PvE mini-game (solo)
-- [ ] Build the Explorer/Adventure branch co-op mini-game (play with a friend vs. enemies)
-- [ ] Build the Warrior branch PvP arena (3D, Brawl Stars-style) — likely the most technically involved,
-      consider sequencing this later within the phase
-- [ ] Login streak system
-- [ ] Push notifications with quiet-hours logic (no nighttime pings)
+- [x] Build the Sport branch mini-game — `TapReflexMiniGame` ("Bubble Dash")
+- [x] Build the Social + Science quiz mini-game — `QuizMiniGame` + `QuizBank` (placeholder questions)
+- [x] Build the Hunter branch PvE mini-game (solo) — `HuntMiniGame` (three waves of drifting critters)
+- [x] Build the Nature branch mini-game — `BloomMiniGame` ("Bloom Sort" colour-matching under a wilt timer; replaced the timing bar)
+- [~] Explorer/Adventure branch — solo *Trail Memory* built; the co-op (friend vs. enemies) version needs networking
+- [~] Warrior branch — solo *Arena* duel built; the online PvP arena (3D, Brawl Stars-style) needs networking
+      and remains the most technically involved item
+- [x] Login streak system — `GameBootstrap.ApplyLoginStreak` (escalating coin reward, capped at 50)
+- [~] Push notifications with quiet-hours logic — scheduling logic done (`NotificationScheduler`); delivery is
+      a log stub until `com.unity.mobile.notifications` is wired
 - [ ] Leaderboards / social rankings — only after compliance questions below are resolved
 - [ ] Seasonal content system groundwork (can be minimal for v1)
 
@@ -79,10 +83,12 @@ add new ones as decisions get made. This is meant to be edited constantly, not t
 
 - [ ] Complete Apple's age rating questionnaire honestly; confirm what it actually calculates to
 - [ ] Write the privacy policy
-- [ ] Implement the age-band collection flow (local/anonymous, not tied to persistent identifiers)
+- [~] Implement the age-band collection flow — asked during onboarding, stored only in the local save;
+      under-13 hides real-money shop items. Review wording/legal copy before store submission.
 - [ ] Audit every third-party SDK (analytics, crash reporting, IAP) against the compliance notes in
       `07-apple-compliance-questionnaire.md`
-- [ ] Implement the purchase-confirmation friction step for the IAP/shop flow
+- [ ] Implement the purchase-confirmation friction step for the IAP/shop flow — purchase abstraction exists
+      (`IPurchaseService`, mock for MVP); **real purchases must use Apple StoreKit, not Stripe** (Guideline 3.1.1)
 - [ ] Finalize the IAP catalog (which cosmetics/bonuses, pricing)
 - [ ] Finalize store metadata (screenshots, description, icon) consistent with the 13+ positioning
 

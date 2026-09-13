@@ -144,7 +144,9 @@ alternate style (e.g. a battle-pose variant) worth folding in later.
 
 - Concrete mood board / reference set for the explorable *world* specifically (the creature portrait style
   is now drafted above, but the world/UI layer's visual direction is still unresolved).
-- Final internal render resolution and pixel scale for the 2D layer.
+- Internal render resolution: **implemented as a fixed internal height of 540 px** (`PixelRenderer` in code)
+  with nearest-neighbour upscaling — a bit under a third of the 1080×1920 UI canvas. Still worth validating
+  on a real iPhone; it's a one-constant change.
 - Visual identity of the creature across evolution branches — how distinct should each branch look?
 - UI style specifically — "premium, non-trashy" needs to be turned into concrete rules (palette limits,
   iconography style, typography) rather than staying a vibe.

@@ -67,3 +67,30 @@ See `07-apple-compliance-questionnaire.md` for the full working checklist and de
   parental-gate flow design.
 - Legal/compliance review — this document is a planning aid, not legal advice; a proper review (COPPA,
   GDPR-K if targeting EU, etc.) should happen before submission.
+
+## Economy design (v0.1, 2026-09-13)
+
+Two currencies, shown top-left of the home screen:
+
+- **Coins (yellow)** — the play currency. Sources: care actions and cuddles (via level-ups), every
+  mini-game (25 win / 10 lose × tier multiplier), daily login streak (10 × streak day, max 50), promo and
+  invite codes. Sinks: helpers (automation, 150 each), Treat Box (40), room decor (150–200), basic outfits
+  (120–250).
+- **Gems (purple)** — the premium currency. Sources from play are deliberate but slow: +5 per character
+  level, +10 on every 7th streak day, promo codes. Bought with real money in fixed packs. Sinks: premium
+  outfits (30–80), timed boosts — *Zoomies* (no care cooldowns for 1 h, 15), *Lucky Hour* (2× mini-game
+  rewards for 1 h, 20) — *Streak Shield* (10), and a gems→coins exchange (20 → 500).
+
+**Real money** (App Store / StoreKit only): Gem Pouch 50, Gem Jar 150, Gem Chest 400, and a one-time
+*Starter Bundle* (120 gems + Cozy Beanie + Snack Dispenser). Prices are set in App Store Connect; the
+in-game labels show "App Store" until products exist. Planned later, not built: a monthly *Cozy Pass*
+(auto-renewing subscription with exclusive outfits and a permanent coin bonus) — needs StoreKit
+subscription handling and its own review.
+
+**Deliberately excluded:** loot boxes / gacha / any randomized paid reward, ads, pay-to-skip progression
+gates (boosts speed things up but nothing is locked behind money), real-money items for the under-13 age
+band (hidden entirely), and selling anything that affects other players (leaderboards stay skill-based).
+
+**Why it hangs together:** outfits and room items are visible on the pet and in the room (the emotional
+hook), boosts multiply time the player already spends, and every coin sink has a coin source, so a
+non-paying player can reach everything except premium outfits with patience.

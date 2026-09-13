@@ -25,7 +25,7 @@ Status: draft v0.1 — captures core loop decisions; numbers/tuning are placehol
 | **Warrior** | Combat | PvP, multiplayer arena battles (3D, Brawl Stars-style) | Keep visually stylized/kawaii rather than gritty — mild cartoon-violence framing is fine and expected to land around a 9+ content rating, not a concern outside the Kids Category, but worth keeping intentional rather than accidental. |
 | **Hunter** | Survival/tracking | PvE mini-games, solo | Singleplayer only — co-op lives in Explorer/Adventure instead (see below), since the two are mechanically distinct (solo PvE vs. co-op-with-a-friend). |
 | **Science** | General knowledge | Puzzle/matching-style quiz format | Second edutainment branch, pairs with Social for a "smart pet" positioning angle. |
-| **Fashion** *(retained from earlier planning)* | Style/cosmetics | Styling/dress-up interactions | Deliberately kept — ties directly into the cosmetics IAP model, making monetization progression-driven rather than a bolted-on shop. |
+| **Nature** *(replaced Fashion on 2026-09-13)* | Garden / growing | Timing mini-game (tap when the marker is in the green zone; the sprout grows per hit) | Cosmetics stay a pure shop feature; Nature gives the roster a calm, cozy branch and a distinct mechanic. |
 | **Explorer/Adventure** *(7th branch, confirmed)* | World exploration, resource gathering | Co-op PvE (play with a friend vs. enemies) | Dedicated home for co-op — one side (player + friend) against enemies, distinct from Hunter's solo PvE. |
 
 - Branch choices drive the creature's **evolution branch** — this is the long-term differentiation from
