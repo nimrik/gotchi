@@ -74,15 +74,17 @@ Two currencies, shown top-left of the home screen:
 
 - **Coins (yellow)** — the play currency. Sources: care actions and cuddles (via level-ups), every
   mini-game (25 win / 10 lose × tier multiplier), daily login streak (10 × streak day, max 50), promo and
-  invite codes. Sinks: helpers (automation, 150 each), Treat Box (40), room decor (150–200), basic outfits
-  (120–250).
-- **Gems (purple)** — the premium currency. Sources from play are deliberate but slow: +5 per character
+  invite codes. Sinks: helpers (automation, 150 each), Full Refill (40), room decor (150–200), background
+  sets (300–350), basic outfits (120–250).
+- **Hearts (pink; renamed from gems 2026-09-14 — hearts are the love the pet gives its owner, which fits the story)** — the premium currency. Sources from play are deliberate but slow: +5 per character
   level, +10 on every 7th streak day, promo codes. Bought with real money in fixed packs. Sinks: premium
-  outfits (30–80), timed boosts — *Zoomies* (no care cooldowns for 1 h, 15), *Lucky Hour* (2× mini-game
-  rewards for 1 h, 20) — *Streak Shield* (10), and a gems→coins exchange (20 → 500).
+  outfits (30–80), the Starry Night background (40), timed bonuses — *No Cooldowns* (1 h, 15), *Double
+  Rewards* (2× mini-game rewards for 1 h, 20) — *Streak Shield* (10), and a hearts→coins exchange (*500 Coins*,
+  20 hearts). Shop names state what you get; the cute nicknames (Zoomies, Lucky Hour, Treat Box) were dropped
+  on 2026-09-14 because players could not tell what they bought.
 
-**Real money** (App Store / StoreKit only): Gem Pouch 50, Gem Jar 150, Gem Chest 400, and a one-time
-*Starter Bundle* (120 gems + Cozy Beanie + Snack Dispenser). Prices are set in App Store Connect; the
+**Real money** (App Store / StoreKit only): 50 / 150 / 400 Hearts, and a one-time *Starter Pack* (120 hearts +
+Cozy Beanie + Snack Dispenser). Prices are set in App Store Connect; the
 in-game labels show "App Store" until products exist. Planned later, not built: a monthly *Cozy Pass*
 (auto-renewing subscription with exclusive outfits and a permanent coin bonus) — needs StoreKit
 subscription handling and its own review.

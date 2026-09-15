@@ -139,13 +139,8 @@ namespace Gotchi.UI
             foreach (SpeciesType species in Enum.GetValues(typeof(SpeciesType)))
             {
                 SpeciesType captured = species;
-                var cell = UIFactory.CreateRounded(species.ToString(), grid, UIFactory.Hex("FBF6F9"), 1f);
-                var ring = UIFactory.CreateRounded("Ring", cell.transform, UIFactory.Pink, 1f);
-                UIFactory.Fill(ring.rectTransform, -6f, -6f, -6f, -6f);
-                ring.transform.SetAsFirstSibling();
-                ring.gameObject.SetActive(false);
-                ring.raycastTarget = false;
-                _rings[species] = ring;
+                var cell = UIFactory.CreateFrame(species.ToString(), grid, UIFactory.MenuGrey);
+                _rings[species] = cell;
                 var previewAnchor = UIFactory.CreateRect("Preview", cell.transform);
                 UIFactory.Place(previewAnchor, new Vector2(0.5f, 0.6f), new Vector2(0.5f, 0.6f), Vector2.zero, Vector2.zero);
                 new PetPortraitView(previewAnchor, species, _host, 130f).SetEmotion(EmotionType.Joy, false);
@@ -176,8 +171,8 @@ namespace Gotchi.UI
         private void SelectSpecies(SpeciesType species)
         {
             _result.Species = species;
-            foreach (var pair in _rings) pair.Value.gameObject.SetActive(pair.Key == species);
-            if (_rings.TryGetValue(species, out var ring)) _host.StartCoroutine(SimpleTween.PunchScale(ring.transform.parent, 0.06f, 0.18f));
+            foreach (var pair in _rings) pair.Value.color = pair.Key == species ? UIFactory.Card : UIFactory.MenuGrey;
+            if (_rings.TryGetValue(species, out var cell)) _host.StartCoroutine(SimpleTween.PunchScale(cell.transform, 0.06f, 0.18f));
         }
 
         private int _unwrapTaps;
@@ -186,9 +181,7 @@ namespace Gotchi.UI
         private readonly List<RectTransform> _folds = new List<RectTransform>();
         private PetPortraitView _foundFriend;
         private Image _warmGlow;
-        private Button _takeHome;
-        private Button _doorNext;
-        private Text _doorHint;
+        private DialogBoxView _doorDialog;
 
         // A knock at the door: a bundle on the doorstep, three taps peel the blanket back.
         private void BuildHatch()
@@ -251,15 +244,9 @@ namespace Gotchi.UI
             tap.rectTransform.sizeDelta = new Vector2(380f, 300f);
             tap.gameObject.AddComponent<Button>().onClick.AddListener(OnBundleTap);
 
-            _doorHint = UIFactory.CreateText("Hint", card.transform, "Tap the blanket", 30, UIFactory.Muted, TextAnchor.MiddleCenter, true);
-            UIFactory.Place(_doorHint.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 130f), new Vector2(0f, 190f));
-
-            _takeHome = UIFactory.CreateButton("TakeHome", card.transform, "Take them home", UIFactory.Pink, TakeHome, 30, _host);
-            UIFactory.Place((RectTransform)_takeHome.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-220f, 20f), new Vector2(220f, 92f));
-            _takeHome.gameObject.SetActive(false);
-            _doorNext = UIFactory.CreateButton("Next", card.transform, "Next", UIFactory.Pink, () => ShowStep(3), 30, _host);
-            UIFactory.Place((RectTransform)_doorNext.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-200f, 20f), new Vector2(200f, 92f));
-            _doorNext.gameObject.SetActive(false);
+            _doorDialog = new DialogBoxView(card.transform, _host, 30);
+            UIFactory.Place(_doorDialog.Root, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(16f, 16f), new Vector2(-16f, 206f));
+            _doorDialog.Say("Someone left a bundle on your doorstep... Tap the blanket.");
             _unwrapTaps = 0;
         }
 
@@ -270,7 +257,7 @@ namespace Gotchi.UI
             _host.StartCoroutine(Wobble(_bundle, 0.35f, 6f));
             var fold = _folds[_unwrapTaps - 1];
             _host.StartCoroutine(PeelAway(fold, _unwrapTaps == 1 ? -1f : 1f));
-            _doorHint.text = _unwrapTaps == 1 ? "Something moved…" : _unwrapTaps == 2 ? "Tiny ears!" : "";
+            if (_unwrapTaps < 3) _doorDialog.Say(_unwrapTaps == 1 ? "Something moved..." : "Tiny ears!");
             if (_unwrapTaps >= 3) _host.StartCoroutine(Reveal());
         }
 
@@ -288,20 +275,19 @@ namespace Gotchi.UI
             _foundFriend.SetEmotion(EmotionType.Nervousness, false);
             _host.StartCoroutine(SimpleTween.PopIn(anchor, 0.4f));
             _host.StartCoroutine(Shiver(anchor));
-            _doorHint.text = $"{_result.PetName} is shivering…";
-            yield return new WaitForSeconds(0.5f);
-            _takeHome.gameObject.SetActive(true);
-            _host.StartCoroutine(SimpleTween.PopIn(_takeHome.transform, 0.25f));
+            yield return new WaitForSeconds(0.3f);
+            _doorDialog.Ask($"{_result.PetName} is shivering... Take {_result.PetName} home?", new[] { "Yes", "No" }, choice =>
+            {
+                if (choice == 0) TakeHome();
+                else ShowStep(1);
+            });
         }
 
         private void TakeHome()
         {
-            _takeHome.gameObject.SetActive(false);
             _host.StartCoroutine(SimpleTween.ColorTo(_warmGlow, new Color(1f, 0.85f, 0.55f, 0.45f), 0.8f));
             _foundFriend?.SetEmotion(EmotionType.Gratitude, true);
-            _doorHint.text = $"{_result.PetName} is warm now. Welcome home!";
-            _doorNext.gameObject.SetActive(true);
-            _host.StartCoroutine(SimpleTween.PopIn(_doorNext.transform, 0.25f));
+            _doorDialog.Say($"{_result.PetName} is warm now. Welcome home!", () => ShowStep(3));
         }
 
         private static IEnumerator Shiver(RectTransform target)
@@ -370,7 +356,7 @@ namespace Gotchi.UI
             for (int i = 0; i < options.Length; i++)
             {
                 int index = i;
-                var button = UIFactory.CreateButton(options[i], row, options[i], UIFactory.Hex("F3EEF7"), () => Choose(key, index), 22, _host);
+                var button = UIFactory.CreateButton(options[i], row, options[i], UIFactory.MenuGrey, () => Choose(key, index), 22, _host, UIFactory.MenuInk);
                 buttons.Add(button);
             }
             _optionGroups[key] = buttons;
@@ -384,9 +370,7 @@ namespace Gotchi.UI
             var buttons = _optionGroups[key];
             for (int i = 0; i < buttons.Count; i++)
             {
-                buttons[i].image.color = i == index ? UIFactory.Primary : UIFactory.Hex("F3EEF7");
-                var label = buttons[i].GetComponentInChildren<Text>();
-                if (label != null) label.color = i == index ? Color.white : UIFactory.Ink;
+                buttons[i].image.color = i == index ? UIFactory.Card : UIFactory.MenuGrey;
             }
         }
 

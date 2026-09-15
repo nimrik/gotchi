@@ -13,7 +13,7 @@ namespace Gotchi.Systems
         {
             { SkillBranch.Sport, new[] { NeedType.Hunger, NeedType.Energy } },
             { SkillBranch.Social, new[] { NeedType.Happiness, NeedType.Hygiene } },
-            { SkillBranch.Warrior, new[] { NeedType.Energy, NeedType.Happiness } },
+            { SkillBranch.PvP, new[] { NeedType.Energy, NeedType.Happiness } },
             { SkillBranch.Hunter, new[] { NeedType.Hunger, NeedType.Energy } },
             { SkillBranch.Science, new[] { NeedType.Energy } },
             { SkillBranch.Nature, new[] { NeedType.Happiness } },

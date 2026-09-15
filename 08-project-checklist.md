@@ -7,7 +7,7 @@ add new ones as decisions get made. This is meant to be edited constantly, not t
 
 - [x] Vision & differentiation locked (`01-vision.md`)
 - [x] Basic needs finalized: Hunger / Hygiene / Energy / Happiness
-- [x] Skill-tree branches finalized (7): Sport / Social / Warrior / Hunter / Science / Nature / Explorer-Adventure (Fashion dropped 2026-09-13)
+- [x] Skill-tree branches finalized (7): Sport / Social / PvP (was Warrior) / Hunter / Science / Nature / Explorer-Adventure (Fashion dropped 2026-09-13)
 - [x] Mini-game types confirmed: tap/reflex, 3D multiplayer arena (PvP), quiz/matching format, PvE, co-op
 - [x] Audience repositioned toward tweens/teens/nostalgic young adults (not primarily under-13)
 - [x] Pet species roster finalized (13): Bunny, Cat, Panda, Red Panda, Seal, Raccoon, Penguin, Fennec,
@@ -58,8 +58,11 @@ add new ones as decisions get made. This is meant to be edited constantly, not t
 - [ ] Lock the art style guide (palette, proportions, shading rules) via the Nano Banana → PixelLab.ai
       pipeline in `03-art-direction.md`, before starting bulk sprite production
 - [ ] Source/generate 2D world & UI assets (PixelLab.ai and similar tools)
-- [ ] Commission or build the 3D creature model + rig + core animations (recommended: extra care here,
-      possibly a freelance artist — see `03-art-direction.md`)
+- [~] Background sets — five procedural scenes (`RoomScenes`: Cozy Room free, Meadow / Beach Day / Snow Day /
+      Starry Night sold in the shop); swap the painted props for drawn art in the art pass
+- [~] Creature rig + core animations — **built in code** (`Creature/`): part skeleton, pixel-painted parts,
+      base loops and one-shot clips, 45 expressions. Remaining: replace painted parts with drawn part PNGs
+      per species (spec in `03-art-direction.md`); the 3D model idea is dropped
 - [ ] Produce the full 45-state emotion sprite set for one creature first to validate the pipeline, before
       scaling to all 13 species (see open questions in `09-pets-and-emotions.md`)
 - [ ] Apply real art to the already-validated prototype from Phases 1–2
@@ -71,12 +74,14 @@ add new ones as decisions get made. This is meant to be edited constantly, not t
 - [x] Build the Hunter branch PvE mini-game (solo) — `HuntMiniGame` (three waves of drifting critters)
 - [x] Build the Nature branch mini-game — `BloomMiniGame` ("Bloom Sort" colour-matching under a wilt timer; replaced the timing bar)
 - [~] Explorer/Adventure branch — solo *Trail Memory* built; the co-op (friend vs. enemies) version needs networking
-- [~] Warrior branch — solo *Arena* duel built; the online PvP arena (3D, Brawl Stars-style) needs networking
-      and remains the most technically involved item
+- [~] PvP branch — turn-based *Battle* (Sapphire-style: moves, PP, types, STAB, crits, stat stages, items) built
+      against mock rival pets; live PvP over the network remains future work
 - [x] Login streak system — `GameBootstrap.ApplyLoginStreak` (escalating coin reward, capped at 50)
 - [~] Push notifications with quiet-hours logic — scheduling logic done (`NotificationScheduler`); delivery is
       a log stub until `com.unity.mobile.notifications` is wired
 - [ ] Leaderboards / social rankings — only after compliance questions below are resolved
+- [~] Notification center (bell in the header): announcements, updates, bug fixes, events — mock feed now,
+      Supabase `news` table later; read state in the save
 - [ ] Seasonal content system groundwork (can be minimal for v1)
 
 ## Phase 5 — Compliance & store readiness
@@ -87,8 +92,9 @@ add new ones as decisions get made. This is meant to be edited constantly, not t
       under-13 hides real-money shop items. Review wording/legal copy before store submission.
 - [ ] Audit every third-party SDK (analytics, crash reporting, IAP) against the compliance notes in
       `07-apple-compliance-questionnaire.md`
-- [ ] Implement the purchase-confirmation friction step for the IAP/shop flow — purchase abstraction exists
-      (`IPurchaseService`, mock for MVP); **real purchases must use Apple StoreKit, not Stripe** (Guideline 3.1.1)
+- [~] Purchase-confirmation friction step — every Buy now asks YES / NO in the text box before spending; the
+      purchase abstraction exists (`IPurchaseService`, mock for MVP); **real purchases must use Apple StoreKit,
+      not Stripe** (Guideline 3.1.1)
 - [ ] Finalize the IAP catalog (which cosmetics/bonuses, pricing)
 - [ ] Finalize store metadata (screenshots, description, icon) consistent with the 13+ positioning
 

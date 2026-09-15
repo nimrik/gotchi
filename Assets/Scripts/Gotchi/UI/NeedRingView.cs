@@ -8,68 +8,64 @@ using UnityEngine.UI;
 
 namespace Gotchi.UI
 {
-    // A care button wrapped in a radial meter of its need, with a cooldown badge and a low-need tooltip.
+    // One option in the care block (Sapphire battle-menu style: four options in one box, 2×2). Each option
+    // is icon + plain name + the need's percentage; the cell is the button, ▶ shows while held; on cooldown
+    // the icon dims and the name reads the seconds left.
     public class NeedRingView
     {
         private const float LowTooltipThreshold = 10f;
         private const float TooltipSeconds = 5f;
         private const float AnimateThreshold = 2f;
+        private static readonly Color BarYellow = UIFactory.Hex("E0A020");
+        private static readonly Color BarRed = UIFactory.Hex("F06070");
 
         public readonly NeedType Need;
         public readonly Button Button;
-        private readonly Image _ring;
-        private readonly Image _badge;
-        private readonly Text _badgeText;
+        private readonly string _name;
+        private readonly Text _caption;
+        private readonly Text _value;
         private readonly Image _tooltip;
         private readonly Text _tooltipText;
-        private readonly Color _color;
         private readonly CanvasGroup _iconGroup;
         private readonly MonoBehaviour _host;
         private float _shown = 100f;
         private int _lastLowPercent = -1;
         private Coroutine _tooltipRoutine;
 
-        public NeedRingView(Transform parent, CareAction action, Color color, float x, Action onClick, MonoBehaviour host)
+        // `index` 0..3 → column index % 2, row index / 2 inside `parent` (the shared box).
+        public NeedRingView(Transform parent, CareAction action, Color color, int index, Action onClick, MonoBehaviour host)
         {
             Need = CareActionService.NeedFor(action);
-            _color = color;
             _host = host;
+            _name = action.ToString().ToUpperInvariant();
 
-            var cell = UIFactory.CreateRect(action + "Cell", parent);
-            UIFactory.Place(cell, new Vector2(x, 0f), new Vector2(x, 1f), new Vector2(-80f, 0f), new Vector2(80f, 0f));
+            int col = index % 2, row = index / 2;
+            var cell = UIFactory.CreatePanel(action + "Cell", parent, Color.clear);
+            UIFactory.Place(cell.rectTransform, new Vector2(col * 0.5f, 0.5f - row * 0.5f), new Vector2(col * 0.5f + 0.5f, 1f - row * 0.5f),
+                new Vector2(col == 0 ? 14f : 6f, row == 1 ? 12f : 4f), new Vector2(col == 1 ? -14f : -6f, row == 0 ? -12f : -4f));
+            Button = UIFactory.MakePressable(cell, onClick);
+            UIFactory.ApplyTransition(Button, false);
 
-            var track = UIFactory.CreatePanel("Track", cell, new Color(0f, 0f, 0f, 0.06f));
-            track.sprite = UIFactory.RingSprite;
-            UIFactory.Place(track.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-78f, -170f), new Vector2(78f, -14f));
-            track.raycastTarget = false;
+            var cursor = UIFactory.CreateCursor(cell.transform, 18f, UIFactory.MenuInk);
+            UIFactory.Place(cursor.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(4f, -9f), new Vector2(22f, 9f));
+            cursor.enabled = false;
+            var press = cell.gameObject.AddComponent<PressFeedback>();
+            press.OnPressedChanged = down => { if (cursor != null) cursor.enabled = down; };
 
-            _ring = UIFactory.CreatePanel("Ring", cell, color);
-            _ring.sprite = UIFactory.RingSprite;
-            _ring.type = Image.Type.Filled;
-            _ring.fillMethod = Image.FillMethod.Radial360;
-            _ring.fillOrigin = (int)Image.Origin360.Top;
-            _ring.fillClockwise = true;
-            _ring.fillAmount = 1f;
-            UIFactory.Place(_ring.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-78f, -170f), new Vector2(78f, -14f));
-            _ring.raycastTarget = false;
+            var icon = UIFactory.CreateIcon(IconFor(action), cell.transform, 48f, Color.white);
+            UIFactory.Place(icon, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(30f, -24f), new Vector2(78f, 24f));
+            _iconGroup = icon.gameObject.AddComponent<CanvasGroup>();
 
-            Button = UIFactory.CreateIconButton("Button", cell, Color.white, IconFor(action), 116f, onClick, host);
-            _iconGroup = Button.GetComponentInChildren<CanvasGroup>();
-            UIFactory.Place((RectTransform)Button.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-58f, -150f), new Vector2(58f, -34f));
+            _caption = UIFactory.CreatePixelText("Caption", cell.transform, _name, 30, UIFactory.MenuInk, TextAnchor.MiddleLeft, false);
+            _caption.horizontalOverflow = HorizontalWrapMode.Overflow;
+            UIFactory.Place(_caption.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(92f, 0f), new Vector2(-110f, 0f));
 
-            _badge = UIFactory.CreatePill("Cooldown", Button.transform, UIFactory.Ink);
-            UIFactory.Place(_badge.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-64f, -8f), new Vector2(8f, 34f));
-            _badge.raycastTarget = false;
-            _badgeText = UIFactory.CreateText("Text", _badge.transform, "", 20, Color.white, TextAnchor.MiddleCenter, true);
-            UIFactory.Fill(_badgeText.rectTransform);
-            _badge.gameObject.SetActive(false);
+            _value = UIFactory.CreatePixelText("Value", cell.transform, "100%", 30, UIFactory.MenuInk, TextAnchor.MiddleRight, false);
+            _value.horizontalOverflow = HorizontalWrapMode.Overflow;
+            UIFactory.Place(_value.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(-130f, 0f), new Vector2(-18f, 0f));
 
-            var caption = UIFactory.CreateText("Caption", cell, action.ToString(), 18, UIFactory.Ink, TextAnchor.MiddleCenter, true);
-            caption.horizontalOverflow = HorizontalWrapMode.Overflow;
-            UIFactory.Place(caption.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(-10f, 8f), new Vector2(10f, 44f));
-
-            _tooltip = UIFactory.CreatePill("Tooltip", cell, UIFactory.Ink);
-            UIFactory.Place(_tooltip.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-54f, -4f), new Vector2(54f, 40f));
+            _tooltip = UIFactory.CreatePill("Tooltip", cell.transform, UIFactory.Ink);
+            UIFactory.Place(_tooltip.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-56f, -24f), new Vector2(56f, 24f));
             _tooltip.raycastTarget = false;
             _tooltipText = UIFactory.CreateText("Text", _tooltip.transform, "", 22, Color.white, TextAnchor.MiddleCenter, true);
             UIFactory.Fill(_tooltipText.rectTransform);
@@ -81,7 +77,7 @@ namespace Gotchi.UI
             switch (action)
             {
                 case CareAction.Feed: return UIFactory.IconKind.Cookie;
-                case CareAction.Clean: return UIFactory.IconKind.Bubbles;
+                case CareAction.Clean: return UIFactory.IconKind.Shower;
                 case CareAction.Rest: return UIFactory.IconKind.Moon;
                 default: return UIFactory.IconKind.Ball;
             }
@@ -89,12 +85,13 @@ namespace Gotchi.UI
 
         public void SetValue(float value, bool animate)
         {
-            float normalized = Mathf.Clamp01(value / NeedsSystem.Max);
             bool bigJump = Mathf.Abs(value - _shown) >= AnimateThreshold;
+            int from = Mathf.RoundToInt(_shown), to = Mathf.RoundToInt(value);
             _shown = value;
-            if (animate && bigJump) _host.StartCoroutine(SimpleTween.FillTo(_ring, normalized));
-            else _ring.fillAmount = normalized;
-            _ring.color = value < 30f ? Color.Lerp(_color, UIFactory.PinkDark, 0.5f) : _color;
+            if (animate && bigJump) _host.StartCoroutine(SimpleTween.CountUp(_value, from, to, 0.35f, "%"));
+            else _value.text = to + "%";
+            _value.color = value > 50f ? UIFactory.MenuInk : value > 20f ? BarYellow : BarRed;
+            if (animate && bigJump) _host.StartCoroutine(SimpleTween.PunchScale(_value.rectTransform, 0.12f, 0.25f));
 
             if (value < LowTooltipThreshold)
             {
@@ -112,9 +109,9 @@ namespace Gotchi.UI
         {
             bool ready = remaining <= 0f;
             Button.interactable = ready;
-            if (_iconGroup != null) _iconGroup.alpha = ready ? 1f : 0.45f;
-            _badge.gameObject.SetActive(!ready);
-            if (!ready) _badgeText.text = Mathf.CeilToInt(remaining) + "s";
+            if (_iconGroup != null) _iconGroup.alpha = ready ? 1f : 0.4f;
+            _caption.text = ready ? _name : Mathf.CeilToInt(remaining) + "S";
+            _caption.color = ready ? UIFactory.MenuInk : UIFactory.Muted;
         }
 
         private void ShowTooltip(string text)

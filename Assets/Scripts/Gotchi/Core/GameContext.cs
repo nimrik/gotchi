@@ -22,5 +22,6 @@ namespace Gotchi.Core
         public CurrencyWallet Wallet;
         public ShopService Shop;
         public NotificationScheduler Notifications;
+        public NewsCenter News;
     }
 }

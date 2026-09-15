@@ -24,6 +24,14 @@ namespace Gotchi.UI
         public static readonly Color Shadow = new Color(0.45f, 0.3f, 0.35f, 0.14f);
         public static readonly Color Scrim = new Color(0.29f, 0.25f, 0.33f, 0.45f);
 
+        // GBA-era (Pokémon Sapphire) box palette: dark outline, light inner line, grey for unselected menu rows.
+        public static readonly Color PanelBlue = Hex("BCBFF5");      // Sapphire menu blue, lightened for ink text
+        public static readonly Color FrameDark = Hex("5E5E7E");   // lightened 2026-09-14 (was 40405C)
+        public static readonly Color FrameLight = Hex("D8DCEC");
+        public static readonly Color MenuGrey = Hex("D4D5DF");
+        public static readonly Color MenuInk = Hex("4A4A56");
+        public static readonly Color MenuShadow = Hex("B4B4C0");
+
         // Spacing scale (canvas units). See 12-ui-guide.md.
         // Corner radii (canvas units). Pills are always half their height (PillRadius component).
         public static class Radius
@@ -57,6 +65,10 @@ namespace Gotchi.UI
 
         private static Font _heading;
         private static Font _body;
+        private static Font _pixel;
+        private static Sprite _frame;
+        private static Sprite _thinFrame;
+        private static Sprite _triangle;
         private static Sprite _circle;
         private static Sprite _rounded;
         private static Sprite _gradient;
@@ -70,6 +82,10 @@ namespace Gotchi.UI
         public const float FontScale = 1.0f;
 
         public static Font HeadingFont => _heading ?? (_heading = Resources.Load<Font>("Fonts/FredokaOne-Regular") ?? BodyFont);
+        // Jersey 20 (OFL): GBA-style pixel face whose digits stay distinct (Pixelify Sans drew 8/S and 2/Z alike).
+        public static Font PixelFont => _pixel ?? (_pixel = Resources.Load<Font>("Fonts/Jersey20-Regular") ?? Resources.Load<Font>("Fonts/PixelifySans") ?? HeadingFont);
+        // Jersey is narrower and a little shorter than Pixelify at the same point size.
+        public const float PixelScale = 1.1f;
         public static Font BodyFont => _body ?? (_body = Resources.Load<Font>("Fonts/VarelaRound-Regular") ?? Resources.Load<Font>("Fonts/PixelifySans") ?? LoadBuiltinFont("LegacyRuntime.ttf") ?? LoadBuiltinFont("Arial.ttf"));
 
         private static Font LoadBuiltinFont(string name)
@@ -160,9 +176,9 @@ namespace Gotchi.UI
             }
         }
 
-        private static Sprite MakeSprite(int w, int h, Color[] pixels, Vector4 border)
+        private static Sprite MakeSprite(int w, int h, Color[] pixels, Vector4 border, bool point = false)
         {
-            var texture = new Texture2D(w, h, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+            var texture = new Texture2D(w, h, TextureFormat.RGBA32, false) { filterMode = point ? FilterMode.Point : FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
             texture.SetPixels(pixels);
             texture.Apply();
             return Sprite.Create(texture, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, border);
@@ -259,21 +275,13 @@ namespace Gotchi.UI
             return image;
         }
 
-        public static Image CreatePill(string name, Transform parent, Color color) => MakePill(CreateRoundedRadius(name, parent, color, Radius.Base));
+        public static Image CreatePill(string name, Transform parent, Color color) => CreateFrame(name, parent, color);
 
         // Rounded card with a soft drop shadow behind it. cornerScale >= 1: card radius; < 1: row radius.
         public static Image CreateCard(string name, Transform parent, Color color, float cornerScale = 1f)
         {
-            bool isCard = cornerScale >= 1f;
-            float radius = isCard ? Radius.Card : Radius.Row;
             var holder = CreateRect(name, parent);
-            if (isCard)
-            {
-                var shadow = CreateRoundedRadius("Shadow", holder, Shadow, radius);
-                Fill(shadow.rectTransform, -4f, -4f, -2f, -10f);
-                shadow.raycastTarget = false;
-            }
-            var card = CreateRoundedRadius("Card", holder, color, radius);
+            var card = CreateFrame("Card", holder, color);
             Fill(card.rectTransform);
             return card;
         }
@@ -311,9 +319,15 @@ namespace Gotchi.UI
         {
             var rect = CreateRect(name, parent);
             var text = rect.gameObject.AddComponent<Text>();
-            text.font = heading ? HeadingFont : BodyFont;
+            text.font = heading ? PixelFont : BodyFont;
             text.text = content;
-            text.fontSize = Mathf.RoundToInt(size * FontScale);
+            if (heading)
+            {
+                var drop = rect.gameObject.AddComponent<Shadow>();
+                drop.effectColor = new Color(MenuShadow.r, MenuShadow.g, MenuShadow.b, 0.8f);
+                drop.effectDistance = new Vector2(2f, -2f);
+            }
+            text.fontSize = Mathf.RoundToInt(size * FontScale * (heading ? PixelScale : 1f));
             text.color = color;
             text.alignment = anchor;
             text.horizontalOverflow = HorizontalWrapMode.Wrap;
@@ -324,17 +338,25 @@ namespace Gotchi.UI
 
         public static Button CreateButton(string name, Transform parent, string label, Color color, Action onClick, int fontSize = 34, MonoBehaviour tweenHost = null, Color? textColor = null)
         {
-            var background = CreatePill(name, parent, color);
-            if (color == Pink) { color = Primary; background.color = Primary; }
-            var button = background.gameObject.AddComponent<Button>();
-            button.targetGraphic = background;
+            if (color == Pink) color = Primary;
+            var root = CreateFrame(name, parent, color);
+            var fill = FrameFill(root);
+            var button = root.gameObject.AddComponent<Button>();
+            button.targetGraphic = fill;
             ApplyTransition(button);
 
-            var text = CreateText("Label", background.transform, label, fontSize, textColor ?? LabelColorFor(color), TextAnchor.MiddleCenter, true);
+            Color ink = textColor ?? (LabelColorFor(color) == Color.white ? Color.white : MenuInk);
+            var text = CreatePixelText("Label", root.transform, label.ToUpperInvariant(), fontSize, ink, TextAnchor.MiddleLeft);
             text.horizontalOverflow = HorizontalWrapMode.Overflow;
-            Fill(text.rectTransform, 8f, 8f, 4f, 4f);
+            if (ink == Color.white) text.GetComponent<Shadow>().effectColor = Color.Lerp(color, Color.black, 0.3f);
+            Fill(text.rectTransform, 48f, 16f, 6f, 6f);
 
-            background.gameObject.AddComponent<PressFeedback>();
+            var cursor = CreateCursor(root.transform, fontSize * 0.55f, ink);
+            Place(cursor.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(20f, -fontSize * 0.3f), new Vector2(20f + fontSize * 0.55f, fontSize * 0.3f));
+            cursor.enabled = false;
+
+            var press = root.gameObject.AddComponent<PressFeedback>();
+            press.OnPressedChanged = down => { if (cursor != null) cursor.enabled = down; };
             button.onClick.AddListener(() => onClick?.Invoke());
             return button;
         }
@@ -342,10 +364,12 @@ namespace Gotchi.UI
         // Pill-shaped meter; the fill is a rounded image whose anchorMax.x is the normalized value.
         public static Image CreatePillBar(string name, Transform parent, Color fillColor, out RectTransform fill)
         {
-            var track = CreatePill(name, parent, new Color(0f, 0f, 0f, 0.06f));
-            var fillImage = CreatePill("Fill", track.transform, fillColor);
+            var track = CreatePanel(name, parent, Color.white);
+            track.sprite = ThinFrameSprite;
+            track.type = Image.Type.Sliced;
+            var fillImage = CreatePanel("Fill", track.transform, fillColor);
             fill = fillImage.rectTransform;
-            Place(fill, Vector2.zero, new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
+            Place(fill, Vector2.zero, new Vector2(1f, 1f), new Vector2(4f, 4f), new Vector2(-4f, -4f));
             fillImage.raycastTarget = false;
             return track;
         }
@@ -395,7 +419,7 @@ namespace Gotchi.UI
             return element;
         }
 
-        public enum IconKind { Cookie, Bubbles, Moon, Ball, Sparkle, Bag, Heart, Coin, Gem, Chat, Shield, Paw, Flask, Leaf, Compass, Gear, Trophy }
+        public enum IconKind { Cookie, Bubbles, Shower, Moon, Ball, Sparkle, Bag, Shop, Heart, Coin, Gem, Chat, Shield, Paw, Flask, Leaf, Compass, Gear, Trophy, Bell }
 
         // Procedural icons built from circles and rounded rects; `background` is what sits behind the
         // icon (needed for the masked crescent / ring tricks).
@@ -418,6 +442,27 @@ namespace Gotchi.UI
                     Bubble(root, Hex("7CBDF5"), s * 0.42f, s * 0.22f, s * 0.14f);
                     Bubble(root, Hex("7CBDF5"), s * 0.26f, s * 0.2f, -s * 0.26f);
                     break;
+                case IconKind.Shower:
+                {
+                    // Shower head on a bent pipe with three streams of drops.
+                    var pipe = CreateRounded("Pipe", root, Hex("9AA5B8"), 1f);
+                    pipe.rectTransform.sizeDelta = new Vector2(s * 0.1f, s * 0.42f);
+                    pipe.rectTransform.anchoredPosition = new Vector2(-s * 0.3f, s * 0.2f);
+                    pipe.raycastTarget = false;
+                    var arm = CreateRounded("Arm", root, Hex("9AA5B8"), 1f);
+                    arm.rectTransform.sizeDelta = new Vector2(s * 0.42f, s * 0.1f);
+                    arm.rectTransform.anchoredPosition = new Vector2(-s * 0.12f, s * 0.36f);
+                    arm.raycastTarget = false;
+                    var head = CreateRounded("Head", root, Hex("C9D2E0"), 0.5f);
+                    head.rectTransform.sizeDelta = new Vector2(s * 0.56f, s * 0.22f);
+                    head.rectTransform.anchoredPosition = new Vector2(s * 0.1f, s * 0.2f);
+                    head.raycastTarget = false;
+                    Dot(root, Color.white, s * 0.1f, s * 0.02f, s * 0.24f);
+                    for (int i = -1; i <= 1; i++)
+                        for (int j = 0; j < 3; j++)
+                            Dot(root, Hex("7CBDF5"), s * (0.11f + j * 0.02f), s * 0.1f + i * s * 0.17f + (j % 2) * s * 0.03f, -s * 0.02f - j * s * 0.19f);
+                    break;
+                }
                 case IconKind.Moon:
                 {
                     var moon = Dot(root, Hex("F5B942"), s * 0.8f, -s * 0.05f, 0f);
@@ -455,6 +500,34 @@ namespace Gotchi.UI
                     body.rectTransform.anchoredPosition = new Vector2(0f, -s * 0.14f);
                     body.raycastTarget = false;
                     Dot(root, new Color(1f, 1f, 1f, 0.6f), s * 0.14f, -s * 0.18f, -s * 0.02f);
+                    break;
+                }
+                case IconKind.Shop:
+                {
+                    // Little storefront: striped awning over a shop front with a door.
+                    var front = CreateRounded("Front", root, Hex("FFE6C2"), 0.35f);
+                    front.rectTransform.sizeDelta = new Vector2(s * 0.72f, s * 0.5f);
+                    front.rectTransform.anchoredPosition = new Vector2(0f, -s * 0.2f);
+                    front.raycastTarget = false;
+                    var door = CreateRounded("Door", root, Hex("E8907A"), 0.4f);
+                    door.rectTransform.sizeDelta = new Vector2(s * 0.22f, s * 0.3f);
+                    door.rectTransform.anchoredPosition = new Vector2(0f, -s * 0.3f);
+                    door.raycastTarget = false;
+                    var awning = CreateRounded("Awning", root, Coral, 0.5f);
+                    awning.rectTransform.sizeDelta = new Vector2(s * 0.9f, s * 0.3f);
+                    awning.rectTransform.anchoredPosition = new Vector2(0f, s * 0.14f);
+                    awning.raycastTarget = false;
+                    for (int i = -1; i <= 1; i += 2)
+                    {
+                        var stripe = CreateRounded("Stripe", awning.transform, new Color(1f, 1f, 1f, 0.75f), 0.4f);
+                        stripe.rectTransform.sizeDelta = new Vector2(s * 0.14f, s * 0.26f);
+                        stripe.rectTransform.anchoredPosition = new Vector2(i * s * 0.24f, 0f);
+                        stripe.raycastTarget = false;
+                    }
+                    var roof = CreateRounded("Roof", root, Hex("E8907A"), 0.5f);
+                    roof.rectTransform.sizeDelta = new Vector2(s * 0.5f, s * 0.14f);
+                    roof.rectTransform.anchoredPosition = new Vector2(0f, s * 0.34f);
+                    roof.raycastTarget = false;
                     break;
                 }
                 case IconKind.Heart:
@@ -539,6 +612,20 @@ namespace Gotchi.UI
                     }
                     break;
                 }
+                case IconKind.Bell:
+                {
+                    var bellBody = CreateRounded("Body", root, Butter, 1f);
+                    bellBody.rectTransform.sizeDelta = new Vector2(s * 0.62f, s * 0.6f);
+                    bellBody.rectTransform.anchoredPosition = new Vector2(0f, s * 0.06f);
+                    bellBody.raycastTarget = false;
+                    var lip = CreateRounded("Lip", root, Hex("E0A93E"), 0.5f);
+                    lip.rectTransform.sizeDelta = new Vector2(s * 0.78f, s * 0.14f);
+                    lip.rectTransform.anchoredPosition = new Vector2(0f, -s * 0.22f);
+                    lip.raycastTarget = false;
+                    Dot(root, Hex("E0A93E"), s * 0.18f, 0f, -s * 0.36f);
+                    Dot(root, Butter, s * 0.16f, 0f, s * 0.4f);
+                    break;
+                }
                 case IconKind.Trophy:
                 {
                     var cup = CreateRounded("Cup", root, Butter, 0.8f);
@@ -595,7 +682,7 @@ namespace Gotchi.UI
             {
                 case Gotchi.Data.SkillBranch.Sport: return IconKind.Ball;
                 case Gotchi.Data.SkillBranch.Social: return IconKind.Chat;
-                case Gotchi.Data.SkillBranch.Warrior: return IconKind.Shield;
+                case Gotchi.Data.SkillBranch.PvP: return IconKind.Shield;
                 case Gotchi.Data.SkillBranch.Hunter: return IconKind.Paw;
                 case Gotchi.Data.SkillBranch.Science: return IconKind.Flask;
                 case Gotchi.Data.SkillBranch.Nature: return IconKind.Leaf;
@@ -622,18 +709,30 @@ namespace Gotchi.UI
         }
 
         // Round icon button (dock / header). The icon is centred and non-interactive.
-        public static Button CreateIconButton(string name, Transform parent, Color color, IconKind icon, float diameter, Action onClick, MonoBehaviour tweenHost = null, bool innerDisc = false)
+        public static Button CreateIconButton(string name, Transform parent, Color color, IconKind icon, float diameter, Action onClick, MonoBehaviour tweenHost = null, bool innerDisc = false, bool round = false)
         {
-            var background = CreateCircle(name, parent, color, diameter);
+            Image background;
+            Image target;
+            if (round)
+            {
+                background = CreateCircle(name, parent, color, diameter);
+                target = background;
+            }
+            else
+            {
+                background = CreateFrame(name, parent, color);
+                background.rectTransform.sizeDelta = new Vector2(diameter, diameter);
+                target = FrameFill(background);
+            }
             if (innerDisc)
             {
-                var disc = CreateCircle("Disc", background.transform, Color.white, diameter * 0.72f);
+                var disc = CreateCircle("Disc", background.transform, Color.white, diameter * 0.66f);
                 disc.raycastTarget = false;
             }
             var button = background.gameObject.AddComponent<Button>();
-            button.targetGraphic = background;
+            button.targetGraphic = target;
             ApplyTransition(button, false);
-            var iconRect = CreateIcon(icon, background.transform, diameter * (innerDisc ? 0.46f : 0.55f), innerDisc ? Color.white : color);
+            var iconRect = CreateIcon(icon, background.transform, diameter * (innerDisc ? 0.42f : 0.5f), innerDisc ? Color.white : color);
             iconRect.anchoredPosition = Vector2.zero;
             iconRect.gameObject.AddComponent<CanvasGroup>();
             background.gameObject.AddComponent<PressFeedback>();
@@ -643,7 +742,7 @@ namespace Gotchi.UI
 
         public static InputField CreateInputField(string name, Transform parent, string placeholder, InputField.ContentType contentType)
         {
-            var box = CreateRoundedRadius(name, parent, Hex("F6F0F7"), Radius.Input);
+            var box = CreateFrame(name, parent, Color.white);
             var text = CreateText("Text", box.transform, "", 28, Ink, TextAnchor.MiddleLeft);
             Fill(text.rectTransform, 24f, 24f, 8f, 8f);
             text.supportRichText = false;
@@ -738,6 +837,7 @@ namespace Gotchi.UI
 
         public static string PrettyName(string identifier)
         {
+            if (identifier == "PvP") return "PvP";
             var sb = new System.Text.StringBuilder(identifier.Length + 4);
             for (int i = 0; i < identifier.Length; i++)
             {
@@ -751,7 +851,148 @@ namespace Gotchi.UI
         public static void SetButtonLabel(Button button, string label)
         {
             var text = button.GetComponentInChildren<Text>();
-            if (text != null) text.text = label;
+            if (text != null) text.text = text.font == PixelFont ? label.ToUpperInvariant() : label;
+        }
+
+        // Shrinks a framed button to its label (cursor gutter + text + padding) around its current centre,
+        // so short words like BACK do not sit in a 400 px box. Keeps the height and vertical anchors.
+        public static void FitToLabel(Button button, float minWidth = 160f, float padRight = 36f)
+        {
+            var rect = (RectTransform)button.transform;
+            var text = button.GetComponentInChildren<Text>();
+            if (text == null) return;
+            float width = Mathf.Max(minWidth, 48f + text.preferredWidth + padRight);
+            if (!Mathf.Approximately(rect.anchorMin.x, rect.anchorMax.x))
+            {
+                rect.anchorMin = new Vector2(0.5f, rect.anchorMin.y);
+                rect.anchorMax = new Vector2(0.5f, rect.anchorMax.y);
+                rect.offsetMin = new Vector2(-width * 0.5f, rect.offsetMin.y);
+                rect.offsetMax = new Vector2(width * 0.5f, rect.offsetMax.y);
+                return;
+            }
+            float centre = (rect.offsetMin.x + rect.offsetMax.x) * 0.5f;
+            rect.offsetMin = new Vector2(centre - width * 0.5f, rect.offsetMin.y);
+            rect.offsetMax = new Vector2(centre + width * 0.5f, rect.offsetMax.y);
+        }
+
+        // Wallet box in the Sapphire money-window style: one white box, both currencies on one line —
+        // [icon] 1421 COINS   [icon] 85 HEARTS — in big pixel text. Each half can open the shop.
+        public static Image CreateWalletBox(string name, Transform parent, out Text coins, out Text hearts, Action onCoins = null, Action onHearts = null)
+        {
+            var box = CreateFrame(name, parent, Color.white);
+            box.raycastTarget = false;
+            coins = WalletSlot(box.transform, IconKind.Coin, "0 COINS", 0, 0.54f, onCoins);
+            hearts = WalletSlot(box.transform, IconKind.Heart, "0 HEARTS", 0.54f, 1f, onHearts);
+            return box;
+        }
+
+        private static Text WalletSlot(Transform box, IconKind icon, string text, float from, float to, Action onClick)
+        {
+            var slot = CreatePanel(icon + "Slot", box, Color.clear);
+            Place(slot.rectTransform, new Vector2(from, 0f), new Vector2(to, 1f), new Vector2(from == 0f ? 12f : 0f, 8f), new Vector2(to == 1f ? -12f : 0f, -8f));
+            if (onClick != null) MakePressable(slot, onClick); else slot.raycastTarget = false;
+            var iconRect = CreateIcon(icon, slot.transform, 38f, Color.white);
+            Place(iconRect, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(6f, -19f), new Vector2(44f, 19f));
+            var label = CreatePixelText("Text", slot.transform, text, 34, MenuInk, TextAnchor.MiddleLeft);
+            label.horizontalOverflow = HorizontalWrapMode.Overflow;
+            Place(label.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(56f, 0f), new Vector2(0f, 0f));
+            return label;
+        }
+
+        // Fits a button to its label and pins its right edge `right` px inside the parent's right edge.
+        public static void FitToLabelRight(Button button, float right = 12f, float minWidth = 120f, float padRight = 30f)
+        {
+            var rect = (RectTransform)button.transform;
+            var text = button.GetComponentInChildren<Text>();
+            if (text == null) return;
+            float width = Mathf.Max(minWidth, 48f + text.preferredWidth + padRight);
+            rect.anchorMin = new Vector2(1f, rect.anchorMin.y);
+            rect.anchorMax = new Vector2(1f, rect.anchorMax.y);
+            rect.offsetMin = new Vector2(-right - width, rect.offsetMin.y);
+            rect.offsetMax = new Vector2(-right, rect.offsetMax.y);
+        }
+
+        // ---- GBA-style boxes (Pokémon Sapphire reference): dark outline, light inner line, flat fill ----
+
+        public static Sprite FrameSprite => _frame ?? (_frame = BuildFrameSprite());
+        public static Sprite TriangleSprite => _triangle ?? (_triangle = BuildTriangleSprite());
+
+        public static Sprite ThinFrameSprite => _thinFrame ?? (_thinFrame = BuildThinFrameSprite());
+
+        // Opaque white centre so one tinted Image is the whole box (border tints with the fill, like a bevel).
+        private static Sprite BuildFrameSprite()
+        {
+            const int size = 32, outer = 6, inner = 4, cut = 3;
+            var pixels = new Color[size * size];
+            for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                int dx = Mathf.Min(x, size - 1 - x), dy = Mathf.Min(y, size - 1 - y), d = Mathf.Min(dx, dy);
+                bool corner = dx < cut && dy < cut && dx + dy < cut;
+                pixels[y * size + x] = corner ? Color.clear : d < outer ? FrameDark : d < outer + inner ? FrameLight : Color.white;
+            }
+            return MakeSprite(size, size, pixels, new Vector4(12, 12, 12, 12), true);
+        }
+
+        private static Sprite BuildThinFrameSprite()
+        {
+            const int size = 16, outer = 3;
+            var pixels = new Color[size * size];
+            for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                int d = Mathf.Min(Mathf.Min(x, size - 1 - x), Mathf.Min(y, size - 1 - y));
+                pixels[y * size + x] = d < outer ? FrameDark : Color.white;
+            }
+            return MakeSprite(size, size, pixels, new Vector4(5, 5, 5, 5), true);
+        }
+
+        private static Sprite BuildTriangleSprite()
+        {
+            const int size = 16;
+            var pixels = new Color[size * size];
+            for (int y = 0; y < size; y++)
+            {
+                float width = size - Mathf.Abs(y - (size - 1) * 0.5f) * 2f;
+                for (int x = 0; x < size; x++) pixels[y * size + x] = x < width ? Color.white : Color.clear;
+            }
+            return MakeSprite(size, size, pixels, Vector4.zero, true);
+        }
+
+        // A framed box: one sliced, tinted Image. Setting .color recolours the fill (the bevel tints with it).
+        public static Image CreateFrame(string name, Transform parent, Color fill)
+        {
+            var image = CreatePanel(name, parent, fill);
+            image.sprite = FrameSprite;
+            image.type = Image.Type.Sliced;
+            return image;
+        }
+
+        public static Image FrameFill(Image frameRoot) => frameRoot;
+
+        // Chunky pixel text with the light drop shadow GBA menus use.
+        public static Text CreatePixelText(string name, Transform parent, string content, int size, Color color, TextAnchor anchor = TextAnchor.MiddleLeft, bool shadow = true)
+        {
+            var text = CreateText(name, parent, content, size, color, anchor);
+            text.font = PixelFont;
+            text.fontSize = Mathf.RoundToInt(size * FontScale * PixelScale);
+            if (shadow)
+            {
+                var drop = text.gameObject.AddComponent<Shadow>();
+                drop.effectColor = MenuShadow;
+                drop.effectDistance = new Vector2(2f, -2f);
+            }
+            return text;
+        }
+
+        // The ▶ selection cursor.
+        public static Image CreateCursor(Transform parent, float size, Color color)
+        {
+            var cursor = CreatePanel("Cursor", parent, color);
+            cursor.sprite = TriangleSprite;
+            cursor.rectTransform.sizeDelta = new Vector2(size, size);
+            cursor.raycastTarget = false;
+            return cursor;
         }
     }
 }

@@ -23,7 +23,7 @@ namespace Gotchi.MiniGames
         private readonly RectTransform[] _potTops = new RectTransform[3];
         private readonly int[] _blooms = new int[3];
         private Image _seed;
-        private Image _wiltBar;
+        private RectTransform _wiltFill;
         private int _seedColor = -1;
         private int _planted, _correct, _score;
         private float _timeLeft, _seedTime;
@@ -57,9 +57,9 @@ namespace Gotchi.MiniGames
                 _potTops[i] = top;
             }
 
-            _wiltBar = UIFactory.CreatePill("Wilt", playArea, UIFactory.Mint);
-            UIFactory.Place(_wiltBar.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-160f, -320f), new Vector2(160f, -300f));
-            _wiltBar.raycastTarget = false;
+            var wilt = UIFactory.CreatePillBar("Wilt", playArea, UIFactory.Mint, out _wiltFill);
+            UIFactory.Place(wilt.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-160f, -322f), new Vector2(160f, -298f));
+            wilt.raycastTarget = false;
 
             _planted = 0;
             _correct = 0;
@@ -94,7 +94,7 @@ namespace Gotchi.MiniGames
         {
             if (!_running || _locked) return;
             _timeLeft -= Time.deltaTime;
-            _wiltBar.rectTransform.sizeDelta = new Vector2(Mathf.Max(0f, 320f * _timeLeft / _seedTime), 20f);
+            _wiltFill.anchorMax = new Vector2(Mathf.Clamp01(_timeLeft / _seedTime), 1f);
             if (_timeLeft <= 0f) Resolve(-1);
         }
 

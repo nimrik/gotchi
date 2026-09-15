@@ -31,6 +31,7 @@ namespace Gotchi.Core
         }
 
         public static void SetRestScale(Transform t, Vector3 scale) => RestScales[t] = scale;
+        public static void SetRestPosition(RectTransform t, Vector2 position) => RestPositions[t] = position;
 
         // Drop entries for transforms that have been destroyed (Unity's fake-null) so the registry stays small.
         private static void Prune()

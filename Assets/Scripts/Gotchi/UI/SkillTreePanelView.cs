@@ -47,15 +47,15 @@ namespace Gotchi.UI
             UIFactory.Fill(scrim.rectTransform);
             scrim.gameObject.AddComponent<Button>().onClick.AddListener(() => onClose());
 
-            var card = UIFactory.CreateCard("Panel", root, UIFactory.Cream);
+            var card = UIFactory.CreateCard("Panel", root, UIFactory.PanelBlue);
             UIFactory.Fill((RectTransform)card.transform.parent, 28f, 28f, 120f, 140f);
             UIFactory.AddVerticalLayout(card.gameObject, UIFactory.Spacing.List, new RectOffset(24, 24, 28, 24));
 
             _header = UIFactory.CreateText("Header", card.transform, "Skills", 44, UIFactory.Ink, TextAnchor.MiddleCenter, true);
             UIFactory.SetPreferredHeight(_header.gameObject, 54f);
-            _subheader = UIFactory.CreateText("Sub", card.transform, "", 26, UIFactory.Muted, TextAnchor.MiddleCenter);
+            _subheader = UIFactory.CreateText("Sub", card.transform, "", 26, UIFactory.MenuInk, TextAnchor.MiddleCenter);
             UIFactory.SetPreferredHeight(_subheader.gameObject, 40f);
-            var hint = UIFactory.CreateText("Hint", card.transform, "A branch rests while the needs it uses are below 30.", 22, UIFactory.Muted, TextAnchor.MiddleCenter);
+            var hint = UIFactory.CreateText("Hint", card.transform, "A branch rests while the needs it uses are below 30.", 22, UIFactory.MenuInk, TextAnchor.MiddleCenter);
             UIFactory.SetPreferredHeight(hint.gameObject, 34f);
 
             int index = 0;
@@ -88,8 +88,11 @@ namespace Gotchi.UI
                 _rows.Add(new Row { Branch = branch, Fill = fill, Xp = xp, Play = play, Card = rowCard, Playable = playable });
             }
 
-            var back = UIFactory.CreateButton("Back", card.transform, "Back", UIFactory.Card, onClose, 30, host);
-            UIFactory.SetPreferredHeight(back.gameObject, 76f);
+            var backHolder = UIFactory.CreateRect("BackHolder", card.transform);
+            UIFactory.SetPreferredHeight(backHolder.gameObject, 76f);
+            var back = UIFactory.CreateButton("Back", backHolder, "Back", UIFactory.Card, onClose, 30, host);
+            UIFactory.Place((RectTransform)back.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 1f), new Vector2(-200f, 0f), new Vector2(200f, 0f));
+            UIFactory.FitToLabel(back);
 
             Refresh();
         }

@@ -12,7 +12,7 @@ namespace Gotchi.Data
 
     public enum SkillBranch
     {
-        Sport, Social, Warrior, Hunter, Science, Nature, ExplorerAdventure
+        Sport, Social, PvP, Hunter, Science, Nature, ExplorerAdventure
     }
 
     public enum EmotionCategory

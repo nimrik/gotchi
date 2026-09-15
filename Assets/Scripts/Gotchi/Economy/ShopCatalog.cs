@@ -2,12 +2,12 @@ using Gotchi.Data;
 
 namespace Gotchi.Economy
 {
-    public enum ShopCategory { Gems, Boosts, Style, Room, Helpers }
+    public enum ShopCategory { Hearts, Bonuses, Style, Backgrounds, Room, Helpers }
 
     public enum ShopItemKind
     {
         PremiumCurrencyPack, StarterBundle, SoftCurrencyPack, NeedRefill,
-        RewardBoost, CooldownBoost, StreakShield, Cosmetic, RoomDecor,
+        RewardBoost, CooldownBoost, StreakShield, Cosmetic, RoomDecor, Background,
     }
 
     public class ShopItem
@@ -31,18 +31,18 @@ namespace Gotchi.Economy
     {
         public static readonly ShopItem[] Items =
         {
-            // Real money → gems
-            new ShopItem { Id = "gems_small",  Category = ShopCategory.Gems, Kind = ShopItemKind.PremiumCurrencyPack, DisplayName = "Gem Pouch",  Description = "50 gems.",  RealMoney = true, Amount = 50,  StoreProductId = "com.gotchi.gems.small" },
-            new ShopItem { Id = "gems_medium", Category = ShopCategory.Gems, Kind = ShopItemKind.PremiumCurrencyPack, DisplayName = "Gem Jar",    Description = "150 gems — best for a few boosts.", RealMoney = true, Amount = 150, StoreProductId = "com.gotchi.gems.medium" },
-            new ShopItem { Id = "gems_large",  Category = ShopCategory.Gems, Kind = ShopItemKind.PremiumCurrencyPack, DisplayName = "Gem Chest",  Description = "400 gems — the outfit collector's pick.", RealMoney = true, Amount = 400, StoreProductId = "com.gotchi.gems.large" },
-            new ShopItem { Id = "starter_bundle", Category = ShopCategory.Gems, Kind = ShopItemKind.StarterBundle, DisplayName = "Starter Bundle", Description = "120 gems, the Cozy Beanie and a Snack Dispenser. One time only.", RealMoney = true, Amount = 120, StoreProductId = "com.gotchi.starter" },
+            // Real money → hearts (the premium currency: love your pet gives back). Names say the amount.
+            new ShopItem { Id = "gems_small",  Category = ShopCategory.Hearts, Kind = ShopItemKind.PremiumCurrencyPack, DisplayName = "50 Hearts",  Description = "A little bundle of love.",  RealMoney = true, Amount = 50,  StoreProductId = "com.gotchi.gems.small" },
+            new ShopItem { Id = "gems_medium", Category = ShopCategory.Hearts, Kind = ShopItemKind.PremiumCurrencyPack, DisplayName = "150 Hearts", Description = "Enough for a few bonuses.", RealMoney = true, Amount = 150, StoreProductId = "com.gotchi.gems.medium" },
+            new ShopItem { Id = "gems_large",  Category = ShopCategory.Hearts, Kind = ShopItemKind.PremiumCurrencyPack, DisplayName = "400 Hearts", Description = "A whole heart-shaped box.", RealMoney = true, Amount = 400, StoreProductId = "com.gotchi.gems.large" },
+            new ShopItem { Id = "starter_bundle", Category = ShopCategory.Hearts, Kind = ShopItemKind.StarterBundle, DisplayName = "Starter Pack", Description = "120 hearts + Cozy Beanie + Snack Dispenser. One time only.", RealMoney = true, Amount = 120, StoreProductId = "com.gotchi.starter" },
 
-            // Boosts & care (gems / coins)
-            new ShopItem { Id = "coins_pack",   Category = ShopCategory.Boosts, Kind = ShopItemKind.SoftCurrencyPack, DisplayName = "Coin Bag",     Description = "500 coins for helpers and decor.", CostCurrency = CurrencyType.Premium, Cost = 20, Amount = 500 },
-            new ShopItem { Id = "treat_box",    Category = ShopCategory.Boosts, Kind = ShopItemKind.NeedRefill,       DisplayName = "Treat Box",    Description = "Fills every need right now.", CostCurrency = CurrencyType.Soft, Cost = 40, Amount = 100 },
-            new ShopItem { Id = "zoomies",      Category = ShopCategory.Boosts, Kind = ShopItemKind.CooldownBoost,    DisplayName = "Zoomies",      Description = "No care cooldowns for 1 hour.", CostCurrency = CurrencyType.Premium, Cost = 15, Hours = 1f },
-            new ShopItem { Id = "lucky_hour",   Category = ShopCategory.Boosts, Kind = ShopItemKind.RewardBoost,      DisplayName = "Lucky Hour",   Description = "Double mini-game XP and coins for 1 hour.", CostCurrency = CurrencyType.Premium, Cost = 20, Hours = 1f },
-            new ShopItem { Id = "streak_shield",Category = ShopCategory.Boosts, Kind = ShopItemKind.StreakShield,     DisplayName = "Streak Shield", Description = "Keeps your login streak if you miss a day.", CostCurrency = CurrencyType.Premium, Cost = 10 },
+            // Bonuses (hearts / coins). Every name says what you get.
+            new ShopItem { Id = "coins_pack",   Category = ShopCategory.Bonuses, Kind = ShopItemKind.SoftCurrencyPack, DisplayName = "500 Coins",      Description = "Trade 20 hearts for 500 coins.", CostCurrency = CurrencyType.Premium, Cost = 20, Amount = 500 },
+            new ShopItem { Id = "treat_box",    Category = ShopCategory.Bonuses, Kind = ShopItemKind.NeedRefill,       DisplayName = "Full Refill",    Description = "All four needs to 100% right now.", CostCurrency = CurrencyType.Soft, Cost = 40, Amount = 100 },
+            new ShopItem { Id = "zoomies",      Category = ShopCategory.Bonuses, Kind = ShopItemKind.CooldownBoost,    DisplayName = "No Cooldowns",   Description = "Care actions have no wait for 1 hour.", CostCurrency = CurrencyType.Premium, Cost = 15, Hours = 1f },
+            new ShopItem { Id = "lucky_hour",   Category = ShopCategory.Bonuses, Kind = ShopItemKind.RewardBoost,      DisplayName = "Double Rewards", Description = "2× XP and coins from mini-games for 1 hour.", CostCurrency = CurrencyType.Premium, Cost = 20, Hours = 1f },
+            new ShopItem { Id = "streak_shield",Category = ShopCategory.Bonuses, Kind = ShopItemKind.StreakShield,     DisplayName = "Streak Shield",  Description = "Keeps your login streak if you miss a day.", CostCurrency = CurrencyType.Premium, Cost = 10 },
 
             // Style (worn by the pet)
             new ShopItem { Id = "bow_cherry",  Category = ShopCategory.Style, Kind = ShopItemKind.Cosmetic, DisplayName = "Cherry Bow",  Description = "A little bow by the ear.", CostCurrency = CurrencyType.Soft, Cost = 120 },
@@ -50,7 +50,13 @@ namespace Gotchi.Economy
             new ShopItem { Id = "hat_beanie",  Category = ShopCategory.Style, Kind = ShopItemKind.Cosmetic, DisplayName = "Cozy Beanie", Description = "Pom-pom included.", CostCurrency = CurrencyType.Premium, Cost = 30 },
             new ShopItem { Id = "crown_tiny",  Category = ShopCategory.Style, Kind = ShopItemKind.Cosmetic, DisplayName = "Tiny Crown",  Description = "For the ruler of the rug.", CostCurrency = CurrencyType.Premium, Cost = 80 },
 
-            // Room
+            // Backgrounds (whole scene behind the pet; "bg_cozy" is the free default, see RoomScenes)
+            new ShopItem { Id = "bg_meadow", Category = ShopCategory.Backgrounds, Kind = ShopItemKind.Background, DisplayName = "Meadow",       Description = "Rolling hills, flowers and a big sun.", CostCurrency = CurrencyType.Soft, Cost = 300 },
+            new ShopItem { Id = "bg_beach",  Category = ShopCategory.Backgrounds, Kind = ShopItemKind.Background, DisplayName = "Beach Day",    Description = "Waves, warm sand and a palm tree.", CostCurrency = CurrencyType.Soft, Cost = 350 },
+            new ShopItem { Id = "bg_snow",   Category = ShopCategory.Backgrounds, Kind = ShopItemKind.Background, DisplayName = "Snow Day",     Description = "Soft snow, a pine and a snowman.", CostCurrency = CurrencyType.Soft, Cost = 350 },
+            new ShopItem { Id = "bg_night",  Category = ShopCategory.Backgrounds, Kind = ShopItemKind.Background, DisplayName = "Starry Night", Description = "Moonlight and twinkling stars.", CostCurrency = CurrencyType.Premium, Cost = 40 },
+
+            // Room (decor on top of any background)
             new ShopItem { Id = "rug_mint",     Category = ShopCategory.Room, Kind = ShopItemKind.RoomDecor, DisplayName = "Mint Rug",     Description = "A fresh green rug.", CostCurrency = CurrencyType.Soft, Cost = 150 },
             new ShopItem { Id = "rug_sky",      Category = ShopCategory.Room, Kind = ShopItemKind.RoomDecor, DisplayName = "Sky Rug",      Description = "A calm blue rug.", CostCurrency = CurrencyType.Soft, Cost = 150 },
             new ShopItem { Id = "fairy_lights", Category = ShopCategory.Room, Kind = ShopItemKind.RoomDecor, DisplayName = "Fairy Lights", Description = "Twinkles along the ceiling.", CostCurrency = CurrencyType.Soft, Cost = 200 },

@@ -25,18 +25,21 @@ namespace Gotchi.UI
         private readonly RectTransform _signInForm;
         private readonly Button _notificationsButton;
         private readonly Button _resetButton;
-        private bool _resetArmed;
+        private readonly DialogBoxView _dialog;
         private readonly Text _header;
-        private readonly Transform _card;
         private readonly Button _back;
-        private readonly Dictionary<string, RectTransform> _pages = new Dictionary<string, RectTransform>();
-        private string _page = "Menu";
+        private readonly PagedScroll _pages;
+        private readonly TabBarView _tabBar;
+        private readonly Dictionary<string, int> _pageIndex = new Dictionary<string, int>();
+        private static readonly string[] PageIds = { "Sound", "Account", "Codes", "About" };
 
         public readonly GameObject Root;
 
-        public SettingsPanelView(Transform parent, GameContext ctx, Action<string> toast, Action onClose, Action onOpenShop, MonoBehaviour host)
+        // Same shape as the shop: big pixel title, ◀ PAGE ▶ pager with a counter, swipeable pages of rows, Back.
+        public SettingsPanelView(Transform parent, GameContext ctx, Action<string> toast, Action onClose, Action onOpenShop, MonoBehaviour host, DialogBoxView dialog)
         {
             _ctx = ctx;
+            _dialog = dialog;
             _toast = toast;
             _host = host;
 
@@ -46,19 +49,25 @@ namespace Gotchi.UI
             UIFactory.Fill(scrim.rectTransform);
             scrim.gameObject.AddComponent<Button>().onClick.AddListener(() => onClose());
 
-            var card = UIFactory.CreateCard("Panel", root, UIFactory.Cream);
+            var card = UIFactory.CreateCard("Panel", root, UIFactory.PanelBlue);
             UIFactory.Fill((RectTransform)card.transform.parent, 28f, 28f, 100f, 120f);
 
-            _header = UIFactory.CreateText("Header", card.transform, "Settings", 44, UIFactory.Ink, TextAnchor.MiddleCenter, true);
+            _header = UIFactory.CreatePixelText("Header", card.transform, "SETTINGS", 52, UIFactory.MenuInk, TextAnchor.MiddleCenter);
             UIFactory.Place(_header.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -84f), new Vector2(0f, -24f));
-            _card = card.transform;
 
-            // Menu page
-            var menu = Page("Menu");
-            MenuRow(menu, "Sound & reminders", "Volume, care nudges.", UIFactory.IconKind.Moon, () => ShowPage("Sound"));
-            MenuRow(menu, "Account", "Sign in, log out.", UIFactory.IconKind.Heart, () => ShowPage("Account"));
-            MenuRow(menu, "Friends & codes", "Invite code, promo codes.", UIFactory.IconKind.Gem, () => ShowPage("Codes"));
-            MenuRow(menu, "Purchases & about", "Top up, restore, privacy, reset.", UIFactory.IconKind.Bag, () => ShowPage("About"));
+            _tabBar = TabBarView.Arrows("Tabs", card.transform, new[]
+            {
+                new TabBarView.Tab("Sound & reminders", UIFactory.IconKind.Moon),
+                new TabBarView.Tab("Account", UIFactory.IconKind.Heart),
+                new TabBarView.Tab("Friends & codes", UIFactory.IconKind.Sparkle),
+                new TabBarView.Tab("Purchases & about", UIFactory.IconKind.Bag),
+            }, host);
+            UIFactory.Place(_tabBar.Root, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(24f, -172f), new Vector2(-24f, -100f));
+            _tabBar.OnSelected += index => _pages.GoTo(index);
+
+            _pages = PagedScroll.Create("Pages", card.transform, out RectTransform viewport);
+            UIFactory.Place(viewport, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(0f, 110f), new Vector2(0f, -188f));
+            _pages.OnPageChanged += index => _tabBar.Select(index, false);
 
             var sound = Page("Sound");
             SliderRow(sound, "Effects", GameSettings.SfxVolume, v => GameSettings.SfxVolume = v);
@@ -97,63 +106,45 @@ namespace Gotchi.UI
                 if (ctx.Data.redeemedPromoCodes.Contains(code)) { _toast("Already redeemed."); return; }
                 ctx.Data.redeemedPromoCodes.Add(code);
                 ctx.Wallet.Add(reward.currency, reward.amount);
-                _toast($"Redeemed {code}: +{reward.amount} {(reward.currency == CurrencyType.Soft ? "coins" : "gems")}");
+                _toast($"Redeemed {code}: +{reward.amount} {(reward.currency == CurrencyType.Soft ? "coins" : "hearts")}");
             });
 
             var about = Page("About");
-            ButtonRow(about, "Top up gems", "Open the shop.", "Shop", UIFactory.Pink, () => { onClose(); onOpenShop(); });
+            ButtonRow(about, "Top up hearts", "Open the shop.", "Shop", UIFactory.Pink, () => { onClose(); onOpenShop(); });
             ButtonRow(about, "Restore purchases", "For a new device.", "Restore", UIFactory.Card, () => _toast("Nothing to restore in the mock store."));
             ButtonRow(about, "Privacy & terms", "Coming with store submission.", "View", UIFactory.Card, () => _toast("Privacy policy and terms are on the launch checklist."));
             _resetButton = ButtonRow(about, "Start over", "Deletes this pet and your progress.", "Reset", UIFactory.Coral, () =>
-            {
-                if (!_resetArmed)
+                _dialog.Ask("Erase this pet and all progress? This cannot be undone.", new[] { "Yes", "No" }, choice =>
                 {
-                    _resetArmed = true;
-                    UIFactory.SetButtonLabel(_resetButton, "Sure?");
-                    _toast("Tap again to erase everything.");
-                    return;
-                }
-                ctx.SaveService.Delete();
-                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
-            });
+                    if (choice != 0) return;
+                    ctx.SaveService.Delete();
+                    SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+                }));
 
-            _back = UIFactory.CreateButton("Back", card.transform, "Back", UIFactory.Card, () => { if (_page == "Menu") onClose(); else ShowPage("Menu"); }, 30, host);
+            _back = UIFactory.CreateButton("Back", card.transform, "Back", UIFactory.Card, onClose, 30, host);
             UIFactory.Place((RectTransform)_back.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-200f, 24f), new Vector2(200f, 96f));
-            ShowPage("Menu");
+            UIFactory.FitToLabel(_back);
+            _pages.GoTo(0, false);
+            _tabBar.Select(0, false);
         }
 
         private RectTransform Page(string id)
         {
-            var page = UIFactory.CreateRect("Page" + id, _card);
-            UIFactory.Place(page, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(24f, 110f), new Vector2(-24f, -100f));
-            UIFactory.AddVerticalLayout(page.gameObject, UIFactory.Spacing.List, new RectOffset(0, 0, 0, 0));
-            _pages[id] = page;
-            return page;
+            var page = _pages.AddPage("Page" + id);
+            var column = UIFactory.CreateRect("Rows", page);
+            UIFactory.Fill(column, 24f, 24f, 8f, 8f);
+            UIFactory.AddVerticalLayout(column.gameObject, UIFactory.Spacing.List, new RectOffset(0, 0, 0, 0));
+            _pageIndex[id] = _pageIndex.Count;
+            return column;
         }
 
+        // "Menu" (the old landing page) now means the first page.
         public void ShowPage(string id)
         {
-            _page = id;
-            foreach (var pair in _pages) pair.Value.gameObject.SetActive(pair.Key == id);
-            _header.text = id == "Menu" ? "Settings" : id == "Sound" ? "Sound & reminders" : id == "Account" ? "Account" : id == "Codes" ? "Friends & codes" : "Purchases & about";
-            UIFactory.SetButtonLabel(_back, id == "Menu" ? "Back" : "Settings");
-            _host.StartCoroutine(SimpleTween.PopIn(_pages[id], 0.2f));
+            int index = _pageIndex.TryGetValue(id, out int i) ? i : 0;
+            _pages.GoTo(index, false);
+            _tabBar.Select(index, false);
         }
-
-        private void MenuRow(Transform parent, string title, string subtitle, UIFactory.IconKind icon, Action onClick)
-        {
-            var row = Row(parent, 120f);
-            var iconRect = UIFactory.CreateIcon(icon, row.transform, 52f, UIFactory.Card);
-            UIFactory.Place(iconRect, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(24f, -26f), new Vector2(76f, 26f));
-            var titleText = UIFactory.CreateText("Title", row.transform, title, 28, UIFactory.Ink, TextAnchor.MiddleLeft, true);
-            UIFactory.Place(titleText.rectTransform, new Vector2(0f, 0.5f), new Vector2(1f, 1f), new Vector2(96f, -4f), new Vector2(-60f, -10f));
-            var sub = UIFactory.CreateText("Sub", row.transform, subtitle, 21, UIFactory.Muted, TextAnchor.MiddleLeft);
-            UIFactory.Place(sub.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0.5f), new Vector2(96f, 10f), new Vector2(-60f, 4f));
-            var chevron = UIFactory.CreateText("Chevron", row.transform, ">", 30, UIFactory.Muted, TextAnchor.MiddleCenter, true);
-            UIFactory.Place(chevron.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(-60f, 0f), new Vector2(-16f, 0f));
-            UIFactory.MakePressable(row, onClick);
-        }
-
 
         private static Image Row(Transform parent, float height)
         {
@@ -228,11 +219,15 @@ namespace Gotchi.UI
         {
             if (!string.IsNullOrEmpty(_ctx.Data.accountEmail))
             {
-                _ctx.Data.accountEmail = "";
-                _ctx.Data.sessionToken = "";
-                _ctx.SaveService.Save(_ctx.Data);
-                _toast("Logged out. Your pet stays on this device.");
-                RefreshAccount();
+                _dialog.Ask("Log out? Your pet stays on this device.", new[] { "Yes", "No" }, choice =>
+                {
+                    if (choice != 0) return;
+                    _ctx.Data.accountEmail = "";
+                    _ctx.Data.sessionToken = "";
+                    _ctx.SaveService.Save(_ctx.Data);
+                    _toast("Logged out. Your pet stays on this device.");
+                    RefreshAccount();
+                });
                 return;
             }
             _signInForm.gameObject.SetActive(!_signInForm.gameObject.activeSelf);

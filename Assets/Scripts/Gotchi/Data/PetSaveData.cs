@@ -48,6 +48,9 @@ namespace Gotchi.Data
         public string equippedCosmeticId = "";
         public string rugId = "rug_pink";
         public List<string> ownedRoomIds = new List<string>();
+        public string backgroundId = "bg_cozy";
+        public List<string> ownedBackgroundIds = new List<string>();
+        public List<string> readNewsIds = new List<string>();
         public long rewardBoostUntilUtcTicks;
         public long cooldownBoostUntilUtcTicks;
         public int streakShields;

@@ -8,7 +8,7 @@ using UnityEngine.UI;
 
 namespace Gotchi.UI
 {
-    // Cozy procedural room: floor, window with sun and drifting cloud, plant, rug — the pet in front.
+    // The room: a background set (RoomScenes) behind, rug and fairy lights, the pet in front, status bar below.
     public class RoomView
     {
         private readonly MonoBehaviour _host;
@@ -20,10 +20,16 @@ namespace Gotchi.UI
         private readonly Text _wishText;
         private readonly Action<CareAction> _onWish;
         private readonly Action _onCuddle;
-        private readonly Text _levelText;
+        private readonly Text _nameText;
+        private readonly Text _xpText;
+        private readonly RectTransform _levelTrack;
+        private float _wishWidth = 200f;
+        private readonly string _petName;
         private readonly Image _rug;
         private readonly Image _rugInner;
         private readonly RectTransform _fairyLights;
+        private readonly RectTransform _sceneLayer;
+        private string _sceneId;
         private readonly RectTransform _levelFill;
         private bool _cuddleMode;
         private RectTransform _wishIcon;
@@ -33,51 +39,17 @@ namespace Gotchi.UI
         public readonly RectTransform Root;
         public readonly PetPortraitView Pet;
 
-        public RoomView(Transform parent, string petName, SpeciesType species, Action<CareAction> onWish, Action onCuddle, Action onOpenStory, Action onPetTap, MonoBehaviour host)
+        public RoomView(Transform parent, Transform sceneParent, string petName, SpeciesType species, Action<CareAction> onWish, Action onCuddle, Action onOpenStory, Action<PetPart> onPetTap, MonoBehaviour host)
         {
             _host = host;
             _onWish = onWish;
             _onCuddle = onCuddle;
             Root = UIFactory.CreateRect("Room", parent);
 
-            var floor = UIFactory.CreateRounded("Floor", Root, UIFactory.Hex("F7E6D6"), 1.6f);
-            UIFactory.Place(floor.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0.36f), new Vector2(-40f, -80f), new Vector2(40f, 0f));
-            floor.raycastTarget = false;
-
-            var frame = UIFactory.CreateRounded("WindowFrame", Root, Color.white, 1f);
-            UIFactory.Place(frame.rectTransform, new Vector2(0.2f, 0.8f), new Vector2(0.2f, 0.8f), new Vector2(-150f, -130f), new Vector2(150f, 130f));
-            frame.raycastTarget = false;
-            var sky = UIFactory.CreateRounded("Sky", frame.transform, UIFactory.Hex("C9E7FF"), 0.8f);
-            UIFactory.Fill(sky.rectTransform, 14f, 14f, 14f, 14f);
-            sky.raycastTarget = false;
-            var sun = UIFactory.CreateCircle("Sun", sky.transform, UIFactory.Butter, 76f);
-            UIFactory.Place(sun.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-116f, -110f), new Vector2(-40f, -34f));
-            sun.raycastTarget = false;
-            var cloud = UIFactory.CreateRect("Cloud", sky.transform);
-            UIFactory.Place(cloud, new Vector2(0.35f, 0.42f), new Vector2(0.35f, 0.42f), Vector2.zero, Vector2.zero);
-            Puff(cloud, 0f, 8f, 64f);
-            Puff(cloud, -34f, -6f, 48f);
-            Puff(cloud, 34f, -4f, 52f);
-            var barV = UIFactory.CreatePanel("BarV", sky.transform, Color.white);
-            UIFactory.Place(barV.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 1f), new Vector2(-6f, 0f), new Vector2(6f, 0f));
-            barV.raycastTarget = false;
-            var barH = UIFactory.CreatePanel("BarH", sky.transform, Color.white);
-            UIFactory.Place(barH.rectTransform, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(0f, -6f), new Vector2(0f, 6f));
-            barH.raycastTarget = false;
-            host.StartCoroutine(Drift(cloud, 26f, 7f));
-
-            var plant = UIFactory.CreateRect("Plant", Root);
-            UIFactory.Place(plant, new Vector2(0.86f, 0.4f), new Vector2(0.86f, 0.4f), Vector2.zero, Vector2.zero);
-            var pot = UIFactory.CreateRounded("Pot", plant, UIFactory.Coral, 0.8f);
-            pot.rectTransform.sizeDelta = new Vector2(120f, 110f);
-            pot.rectTransform.anchoredPosition = new Vector2(0f, -40f);
-            pot.raycastTarget = false;
-            var leaves = UIFactory.CreateRect("Leaves", plant);
-            leaves.anchoredPosition = new Vector2(0f, 20f);
-            Leaf(leaves, -30f, 60f, -28f);
-            Leaf(leaves, 0f, 92f, 0f);
-            Leaf(leaves, 30f, 60f, 28f);
-            host.StartCoroutine(Sway(leaves, 4f, 3.2f));
+            // Background set (floor, window/hills, sky props) — painted by RoomScenes into the full-screen
+            // scene root so it runs seamlessly to the screen edges; swapped from the shop.
+            _sceneLayer = UIFactory.CreateRect("Scene", sceneParent);
+            UIFactory.Fill(_sceneLayer);
 
             var rug = UIFactory.CreateCircle("Rug", Root, UIFactory.Hex("FFD9E3"), 640f);
             _rug = rug;
@@ -96,35 +68,32 @@ namespace Gotchi.UI
                 var bulb = UIFactory.CreateCircle("Bulb", _fairyLights, i % 3 == 0 ? UIFactory.Butter : i % 3 == 1 ? UIFactory.Pink : UIFactory.Sky, 22f);
                 UIFactory.Place(bulb.rectTransform, new Vector2(t, 0.5f), new Vector2(t, 0.5f), new Vector2(-11f, -11f + (i % 2) * 12f), new Vector2(11f, 11f + (i % 2) * 12f));
                 bulb.raycastTarget = false;
-                host.StartCoroutine(Twinkle(bulb, 1.2f + i * 0.17f));
+                host.StartCoroutine(RoomScenes.Twinkle(bulb, 1.2f + i * 0.17f));
             }
             _fairyLights.gameObject.SetActive(false);
 
             _petAnchor = UIFactory.CreateRect("PetAnchor", Root);
             UIFactory.Place(_petAnchor, new Vector2(0.5f, 0.42f), new Vector2(0.5f, 0.42f), Vector2.zero, Vector2.zero);
             Pet = new PetPortraitView(_petAnchor, species, host, 440f);
-            var petHit = UIFactory.CreatePanel("PetTap", _petAnchor, Color.clear);
-            petHit.rectTransform.sizeDelta = new Vector2(460f, 500f);
-            petHit.rectTransform.anchoredPosition = new Vector2(0f, -20f);
-            var petButton = petHit.gameObject.AddComponent<Button>();
-            petButton.targetGraphic = petHit;
-            UIFactory.ApplyTransition(petButton, false);
-            petButton.onClick.AddListener(() => onPetTap?.Invoke());
+            Pet.EnableTouch(part => onPetTap?.Invoke(part));
+            Pet.AllowWander = true;
 
             // Status bar: name + species on the left, a tappable "wish" chip on the right.
             var status = UIFactory.CreateCard("Status", Root, new Color(1f, 1f, 1f, 0.95f), 0.9f);
             UIFactory.Place((RectTransform)status.transform.parent, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 0f), new Vector2(0f, 104f));
-            var name = UIFactory.CreateText("Name", status.transform, petName, 32, UIFactory.Ink, TextAnchor.MiddleLeft, true);
-            UIFactory.Place(name.rectTransform, new Vector2(0f, 0.5f), new Vector2(0.55f, 1f), new Vector2(UIFactory.Spacing.Pad, 0f), new Vector2(0f, -8f));
-            var levelPill = UIFactory.CreatePill("Level", status.transform, UIFactory.Hex("FFF0C2"));
-            UIFactory.Place(levelPill.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 1f), new Vector2(148f, 6f), new Vector2(248f, -10f));
-            levelPill.raycastTarget = false;
-            _levelText = UIFactory.CreateText("Text", levelPill.transform, "Lv 1", 22, UIFactory.Ink, TextAnchor.MiddleCenter, true);
-            UIFactory.Fill(_levelText.rectTransform);
+            _petName = petName;
+            _nameText = UIFactory.CreateText("Name", status.transform, petName, 32, UIFactory.Ink, TextAnchor.MiddleLeft, true);
+            _nameText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            UIFactory.Place(_nameText.rectTransform, new Vector2(0f, 0.5f), new Vector2(0.55f, 1f), new Vector2(UIFactory.Spacing.Pad, 0f), new Vector2(0f, -8f));
             var speciesText = UIFactory.CreateText("Species", status.transform, UIFactory.PrettyName(species.ToString()) + " · tap for story", 20, UIFactory.Muted, TextAnchor.MiddleLeft);
             UIFactory.Place(speciesText.rectTransform, new Vector2(0f, 0f), new Vector2(0.55f, 0.5f), new Vector2(UIFactory.Spacing.Pad, 22f), new Vector2(0f, 4f));
+            // XP to the next level: bar + caption on the same line as the name, right after "Lv N" (positioned in SetLevel).
             var levelTrack = UIFactory.CreatePillBar("LevelBar", status.transform, UIFactory.Butter, out _levelFill);
-            UIFactory.Place(levelTrack.rectTransform, new Vector2(0f, 0f), new Vector2(0.55f, 0f), new Vector2(UIFactory.Spacing.Pad, 10f), new Vector2(0f, 20f));
+            _levelTrack = levelTrack.rectTransform;
+            UIFactory.Place(_levelTrack, new Vector2(0f, 0.71f), new Vector2(1f, 0.71f), new Vector2(260f, -8f), new Vector2(-500f, 8f));
+            _xpText = UIFactory.CreateText("Xp", status.transform, "", 18, UIFactory.Muted, TextAnchor.MiddleRight);
+            _xpText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            UIFactory.Place(_xpText.rectTransform, new Vector2(1f, 0.71f), new Vector2(1f, 0.71f), new Vector2(-640f, -14f), new Vector2(-360f, 14f));
             var storyHit = UIFactory.CreatePanel("StoryTap", status.transform, Color.clear);
             UIFactory.Place(storyHit.rectTransform, new Vector2(0f, 0f), new Vector2(0.55f, 1f), Vector2.zero, Vector2.zero);
             UIFactory.MakePressable(storyHit, () => onOpenStory?.Invoke());
@@ -135,62 +104,31 @@ namespace Gotchi.UI
                 if (_cuddleMode) _onCuddle?.Invoke();
                 else if (_wishAction.HasValue) _onWish?.Invoke(_wishAction.Value);
             });
-            var wishDisc = UIFactory.CreateCircle("Disc", _wishChip.transform, Color.white, 52f);
-            UIFactory.Place(wishDisc.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(10f, -26f), new Vector2(62f, 26f));
+            var wishDisc = UIFactory.CreateCircle("Disc", _wishChip.transform, Color.white, 38f);
+            UIFactory.Place(wishDisc.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(18f, -19f), new Vector2(56f, 19f));
             wishDisc.raycastTarget = false;
             _wishText = UIFactory.CreateText("Text", _wishChip.transform, "", 24, UIFactory.Ink, TextAnchor.MiddleLeft, true);
-            UIFactory.Place(_wishText.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(72f, 0f), new Vector2(-12f, 0f));
+            UIFactory.Place(_wishText.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(66f, 0f), new Vector2(-26f, 0f));
 
-            var bubble = UIFactory.CreateCard("Bubble", Root, Color.white, 0.9f);
-            _bubble = (RectTransform)bubble.transform.parent;
-            UIFactory.Place(_bubble, new Vector2(0.5f, 0.42f), new Vector2(0.5f, 0.42f), new Vector2(150f, 150f), new Vector2(480f, 240f));
-            var tail = UIFactory.CreateCircle("Tail", _bubble, Color.white, 30f);
-            UIFactory.Place(tail.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(10f, -18f), new Vector2(40f, 12f));
-            tail.raycastTarget = false;
-            _bubbleDot = UIFactory.CreateCircle("Dot", bubble.transform, UIFactory.Butter, 26f);
-            UIFactory.Place(_bubbleDot.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(22f, -13f), new Vector2(48f, 13f));
+            // Mood bubble: a speech box beside the pet's head with a tail cut into its border, pointing at the head.
+            // The tail is two rotated squares (anti-aliased): a dark one behind the box, a white one inside it.
+            var tailOutline = UIFactory.CreateRounded("BubbleTail", Root, UIFactory.FrameDark, 0.25f);
+            UIFactory.Place(tailOutline.rectTransform, new Vector2(0.5f, 0.42f), new Vector2(0.5f, 0.42f), new Vector2(70f, 60f), new Vector2(106f, 96f));
+            tailOutline.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+            tailOutline.raycastTarget = false;
+            var bubble = UIFactory.CreateFrame("Bubble", Root, Color.white);
+            bubble.raycastTarget = false;
+            _bubble = bubble.rectTransform;
+            UIFactory.Place(_bubble, new Vector2(0.5f, 0.42f), new Vector2(0.5f, 0.42f), new Vector2(50f, 78f), new Vector2(390f, 158f));
+            var tailFill = UIFactory.CreateRounded("TailFill", _bubble, Color.white, 0.25f);
+            UIFactory.Place(tailFill.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(26f, -8f), new Vector2(50f, 16f));
+            tailFill.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+            tailFill.raycastTarget = false;
+            _bubbleDot = UIFactory.CreateCircle("Dot", _bubble, UIFactory.Butter, 24f);
+            UIFactory.Place(_bubbleDot.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(26f, -12f), new Vector2(50f, 12f));
             _bubbleDot.raycastTarget = false;
-            _bubbleText = UIFactory.CreateText("Text", bubble.transform, "", 28, UIFactory.Ink, TextAnchor.MiddleCenter, true);
-            UIFactory.Fill(_bubbleText.rectTransform, 52f, 16f, 0f, 0f);
-        }
-
-        private static void Puff(Transform parent, float x, float y, float size)
-        {
-            var puff = UIFactory.CreateCircle("Puff", parent, Color.white, size);
-            puff.rectTransform.anchoredPosition = new Vector2(x, y);
-            puff.raycastTarget = false;
-        }
-
-        private static void Leaf(Transform parent, float x, float y, float tilt)
-        {
-            var leaf = UIFactory.CreateCircle("Leaf", parent, UIFactory.Hex("9ED9B5"), 96f);
-            leaf.rectTransform.anchoredPosition = new Vector2(x, y);
-            leaf.rectTransform.localScale = new Vector3(0.62f, 1.15f, 1f);
-            leaf.rectTransform.localRotation = Quaternion.Euler(0f, 0f, tilt);
-            leaf.raycastTarget = false;
-        }
-
-        private static IEnumerator Drift(RectTransform target, float amplitude, float period)
-        {
-            Vector2 origin = target.anchoredPosition;
-            float time = 0f;
-            while (target != null)
-            {
-                time += Time.deltaTime;
-                target.anchoredPosition = origin + new Vector2(Mathf.Sin(time / period * Mathf.PI * 2f) * amplitude, 0f);
-                yield return null;
-            }
-        }
-
-        private static IEnumerator Sway(RectTransform target, float degrees, float period)
-        {
-            float time = 0f;
-            while (target != null)
-            {
-                time += Time.deltaTime;
-                target.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(time / period * Mathf.PI * 2f) * degrees);
-                yield return null;
-            }
+            _bubbleText = UIFactory.CreatePixelText("Text", _bubble, "", 27, UIFactory.MenuInk, TextAnchor.MiddleLeft);
+            UIFactory.Fill(_bubbleText.rectTransform, 62f, 16f, 0f, 0f);
         }
 
         public void SetEmotion(EmotionType emotion, bool animate)
@@ -224,7 +162,7 @@ namespace Gotchi.UI
                 switch (lowest)
                 {
                     case NeedType.Hunger: icon = UIFactory.IconKind.Cookie; text = "Snack time?"; color = UIFactory.Hex("FFDCCB"); _wishAction = CareAction.Feed; break;
-                    case NeedType.Hygiene: icon = UIFactory.IconKind.Bubbles; text = "Bath time?"; color = UIFactory.Hex("D9EEFF"); _wishAction = CareAction.Clean; break;
+                    case NeedType.Hygiene: icon = UIFactory.IconKind.Shower; text = "Bath time?"; color = UIFactory.Hex("D9EEFF"); _wishAction = CareAction.Clean; break;
                     case NeedType.Energy: icon = UIFactory.IconKind.Moon; text = "Nap time?"; color = UIFactory.Hex("E6DDFF"); _wishAction = CareAction.Rest; break;
                     default: icon = UIFactory.IconKind.Ball; text = "Play time?"; color = UIFactory.Hex("FFD9E5"); _wishAction = CareAction.Play; break;
                 }
@@ -232,17 +170,23 @@ namespace Gotchi.UI
             _wishText.text = text;
             _wishChip.color = color;
             _wishText.color = UIFactory.LabelColorFor(color);
-            float width = 72f + _wishText.preferredWidth + 24f;
+            float width = 66f + _wishText.preferredWidth + 40f;
             _wishChip.rectTransform.offsetMin = new Vector2(-16f - width, -34f);
+            if (!Mathf.Approximately(width, _wishWidth)) { _wishWidth = width; LayoutNameLine(); }
             if (_wishIconKind == icon) return;
             _wishIconKind = icon;
             if (_wishIcon != null) UnityEngine.Object.Destroy(_wishIcon.gameObject);
-            _wishIcon = UIFactory.CreateIcon(icon, _wishChip.transform, 36f, Color.white);
-            UIFactory.Place(_wishIcon, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(18f, -18f), new Vector2(54f, 18f));
+            _wishIcon = UIFactory.CreateIcon(icon, _wishChip.transform, 26f, Color.white);
+            UIFactory.Place(_wishIcon, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(24f, -13f), new Vector2(50f, 13f));
         }
 
-        public void ApplyRoom(string rugId, bool fairyLights)
+        public void ApplyRoom(string rugId, bool fairyLights, string backgroundId)
         {
+            if (_sceneId != backgroundId)
+            {
+                _sceneId = backgroundId;
+                RoomScenes.Apply(_sceneLayer, RoomScenes.Find(backgroundId), _host);
+            }
             switch (rugId)
             {
                 case "rug_mint": _rug.color = UIFactory.Hex("D9F3E3"); _rugInner.color = UIFactory.Hex("BFE9D0"); break;
@@ -252,23 +196,24 @@ namespace Gotchi.UI
             _fairyLights.gameObject.SetActive(fairyLights);
         }
 
-        private static IEnumerator Twinkle(Image bulb, float period)
-        {
-            Color baseColor = bulb.color;
-            float time = 0f;
-            while (bulb != null)
-            {
-                time += Time.deltaTime;
-                var c = baseColor; c.a = 0.55f + 0.45f * Mathf.Sin(time / period * Mathf.PI * 2f);
-                bulb.color = c;
-                yield return null;
-            }
-        }
-
         public void SetLevel(int level, float progress)
         {
-            _levelText.text = "Lv " + level;
+            _nameText.text = $"{_petName} · Lv {level}";
             _levelFill.anchorMax = new Vector2(Mathf.Max(0.03f, progress), 1f);
+            _xpText.text = $"{Mathf.RoundToInt(progress * 100f)}% to Lv {level + 1}";
+            LayoutNameLine();
+        }
+
+        // Name line: "Name · Lv N" | XP bar stretched over the free width | "80% to Lv 5" | wish chip.
+        private void LayoutNameLine()
+        {
+            float left = UIFactory.Spacing.Pad + _nameText.preferredWidth + 18f;
+            float captionWidth = _xpText.preferredWidth + 4f;
+            float right = 16f + _wishWidth + 16f;                     // wish chip + gaps
+            _xpText.rectTransform.offsetMin = new Vector2(-right - captionWidth, -14f);
+            _xpText.rectTransform.offsetMax = new Vector2(-right, 14f);
+            _levelTrack.offsetMin = new Vector2(left, -8f);
+            _levelTrack.offsetMax = new Vector2(-right - captionWidth - 12f, 8f);
         }
 
         public void SetConditions(float hunger, float hygiene, float energy, float happiness) =>
@@ -289,10 +234,10 @@ namespace Gotchi.UI
         }
 
         // Reaction to the player tapping the pet.
-        public void Boop()
+        public void Boop(PetPart part)
         {
-            Pet.Boop();
-            _host.StartCoroutine(HeartBurst());
+            Pet.React(part);
+            if (part != PetPart.Tail) _host.StartCoroutine(HeartBurst());
         }
 
         private IEnumerator HeartBurst()

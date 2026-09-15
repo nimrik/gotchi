@@ -30,6 +30,7 @@ namespace Gotchi.Economy
             {
                 case ShopItemKind.Cosmetic: return _data.ownedCosmeticIds.Contains(item.Id);
                 case ShopItemKind.RoomDecor: return _data.ownedRoomIds.Contains(item.Id);
+                case ShopItemKind.Background: return OwnsBackground(item.Id);
                 case ShopItemKind.StarterBundle: return _data.starterBundleOwned;
                 default: return false;
             }
@@ -39,16 +40,30 @@ namespace Gotchi.Economy
         {
             if (item.Kind == ShopItemKind.Cosmetic) return _data.equippedCosmeticId == item.Id;
             if (item.Kind == ShopItemKind.RoomDecor) return item.Id.StartsWith("rug_") ? _data.rugId == item.Id : Owns(item);
+            if (item.Kind == ShopItemKind.Background) return CurrentBackground == item.Id;
             return false;
         }
 
-        public bool CanEquip(ShopItem item) => Owns(item) && (item.Kind == ShopItemKind.Cosmetic || (item.Kind == ShopItemKind.RoomDecor && item.Id.StartsWith("rug_")));
+        public bool CanEquip(ShopItem item) => Owns(item) && (item.Kind == ShopItemKind.Cosmetic || item.Kind == ShopItemKind.Background || (item.Kind == ShopItemKind.RoomDecor && item.Id.StartsWith("rug_")));
 
         public void ToggleEquip(ShopItem item)
         {
             if (!CanEquip(item)) return;
             if (item.Kind == ShopItemKind.Cosmetic) _data.equippedCosmeticId = _data.equippedCosmeticId == item.Id ? "" : item.Id;
+            else if (item.Kind == ShopItemKind.Background) { SetBackground(item.Id); return; }
             else _data.rugId = item.Id;
+            OnEquippedChanged?.Invoke();
+        }
+
+        // Backgrounds: the default set is free for everyone; bought sets are remembered in the save.
+        public const string DefaultBackgroundId = "bg_cozy";
+        public string CurrentBackground => string.IsNullOrEmpty(_data.backgroundId) ? DefaultBackgroundId : _data.backgroundId;
+        public bool OwnsBackground(string id) => id == DefaultBackgroundId || _data.ownedBackgroundIds.Contains(id);
+
+        public void SetBackground(string id)
+        {
+            if (!OwnsBackground(id) || CurrentBackground == id) return;
+            _data.backgroundId = id;
             OnEquippedChanged?.Invoke();
         }
 
@@ -74,7 +89,7 @@ namespace Gotchi.Economy
 
             if (!_wallet.TrySpend(item.CostCurrency, item.Cost))
             {
-                onComplete?.Invoke(PurchaseResult.Fail("Not enough " + (item.CostCurrency == CurrencyType.Soft ? "coins" : "gems") + "."));
+                onComplete?.Invoke(PurchaseResult.Fail("Not enough " + (item.CostCurrency == CurrencyType.Soft ? "coins" : "hearts") + "."));
                 return;
             }
 
@@ -119,6 +134,11 @@ namespace Gotchi.Economy
                 case ShopItemKind.RoomDecor:
                     if (!_data.ownedRoomIds.Contains(item.Id)) _data.ownedRoomIds.Add(item.Id);
                     if (item.Id.StartsWith("rug_")) _data.rugId = item.Id;
+                    OnEquippedChanged?.Invoke();
+                    break;
+                case ShopItemKind.Background:
+                    if (!_data.ownedBackgroundIds.Contains(item.Id)) _data.ownedBackgroundIds.Add(item.Id);
+                    _data.backgroundId = item.Id;
                     OnEquippedChanged?.Invoke();
                     break;
             }

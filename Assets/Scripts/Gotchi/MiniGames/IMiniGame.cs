@@ -105,8 +105,8 @@ namespace Gotchi.MiniGames
             },
             new MiniGameInfo
             {
-                Branch = SkillBranch.Warrior, DisplayName = "Arena", Tagline = "Block the attack, then strike.",
-                Implemented = true, Attach = go => go.AddComponent<ArenaMiniGame>(),
+                Branch = SkillBranch.PvP, DisplayName = "Battle", Tagline = "Turn-based battle. Pick your moves!",
+                Implemented = true, Attach = go => go.AddComponent<BattleMiniGame>(),
             },
             new MiniGameInfo
             {

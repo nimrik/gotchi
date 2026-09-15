@@ -4,7 +4,7 @@ using Gotchi.Data;
 
 namespace Gotchi.Systems
 {
-    // Timed boosts bought with gems, plus streak shields. Stored as UTC expiry ticks in the save.
+    // Timed boosts bought with hearts, plus streak shields. Stored as UTC expiry ticks in the save.
     public class BoostSystem
     {
         private readonly PetSaveData _data;

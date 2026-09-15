@@ -16,8 +16,6 @@ namespace Gotchi.Core
     {
         private const float AutosaveInterval = 30f;
         private const float EmotionRefreshInterval = 0.25f;
-        private const float MiniGameEnergyCost = 8f;
-        private const float MiniGameHappinessGain = 10f;
 
         [SerializeField] private SpeciesType startingSpecies = SpeciesType.Cat;
         [SerializeField] private string petName = "Mochi";
@@ -131,13 +129,14 @@ namespace Gotchi.Core
                     Level = level.Level,
                     EvolutionStage = skills.EvolutionStage,
                     EvolutionBranch = skills.EvolutionBranch,
-                    BranchXp = new[] { skills.GetXp(SkillBranch.Sport), skills.GetXp(SkillBranch.Social), skills.GetXp(SkillBranch.Warrior), skills.GetXp(SkillBranch.Hunter), skills.GetXp(SkillBranch.Science), skills.GetXp(SkillBranch.Nature), skills.GetXp(SkillBranch.ExplorerAdventure) },
+                    BranchXp = new[] { skills.GetXp(SkillBranch.Sport), skills.GetXp(SkillBranch.Social), skills.GetXp(SkillBranch.PvP), skills.GetXp(SkillBranch.Hunter), skills.GetXp(SkillBranch.Science), skills.GetXp(SkillBranch.Nature), skills.GetXp(SkillBranch.ExplorerAdventure) },
                     StreakDays = data.loginStreakDays,
                 }),
                 Wallet = wallet,
                 Shop = shop,
                 Notifications = notifications,
             };
+            _ctx.News = new NewsCenter(new MockNewsService(), _ctx.Data);
 
             _hud = new GameObject("HUD").AddComponent<HUDController>();
             _hud.Initialize(_ctx, HandleMiniGameResult);
@@ -157,6 +156,7 @@ namespace Gotchi.Core
             _onboarding.ShowStep(2);
             yield return new WaitForSeconds(1f);
             ScreenCapture.CaptureScreenshot(basePath + "-onboard-doorstep.png");
+            yield return new WaitForSeconds(0.5f);
             _onboarding.DebugHatch();
             yield return new WaitForSeconds(1.8f);
             ScreenCapture.CaptureScreenshot(basePath + "-onboard-found.png");
@@ -172,6 +172,7 @@ namespace Gotchi.Core
         private IEnumerator CaptureScreenshotsAndQuit(string basePath)
         {
             yield return new WaitForSeconds(2f);
+            foreach (NeedType need in Enum.GetValues(typeof(NeedType))) _ctx.Needs.Set(need, 100f);
             _ctx.Care.TryPerform(CareAction.Feed);
             yield return new WaitForSeconds(1f);
             ScreenCapture.CaptureScreenshot(basePath + "-home.png");
@@ -184,13 +185,51 @@ namespace Gotchi.Core
             yield return new WaitForSeconds(1f);
             ScreenCapture.CaptureScreenshot(basePath + "-shop.png");
             yield return new WaitForSeconds(1f);
+            _hud.ShowShop(ShopCategory.Backgrounds);
+            yield return new WaitForSeconds(1f);
+            ScreenCapture.CaptureScreenshot(basePath + "-shop-backgrounds.png");
+            yield return new WaitForSeconds(0.5f);
+            _hud.ShowShop();
+            yield return new WaitForSeconds(0.5f);
+            foreach (string sceneId in new[] { "bg_meadow", "bg_beach", "bg_snow", "bg_night" })
+            {
+                _ctx.Data.backgroundId = sceneId;
+                _hud.RefreshLook();
+                yield return new WaitForSeconds(1f);
+                ScreenCapture.CaptureScreenshot(basePath + "-home-" + sceneId.Substring(3) + ".png");
+                yield return new WaitForSeconds(0.5f);
+            }
+            _ctx.Data.backgroundId = ShopService.DefaultBackgroundId;
+            _hud.RefreshLook();
+            yield return new WaitForSeconds(0.5f);
             _hud.ShowSettings();
             yield return new WaitForSeconds(1f);
             ScreenCapture.CaptureScreenshot(basePath + "-settings.png");
+            yield return new WaitForSeconds(0.5f);
+            _hud.ShowSettingsPage("Sound");
             yield return new WaitForSeconds(1f);
+            ScreenCapture.CaptureScreenshot(basePath + "-settings-sound.png");
+            yield return new WaitForSeconds(0.5f);
+            _hud.ShowSettingsPage("Menu");
+            yield return new WaitForSeconds(0.5f);
             _hud.ShowLeaderboard();
             yield return new WaitForSeconds(1f);
             ScreenCapture.CaptureScreenshot(basePath + "-leaderboard.png");
+            yield return new WaitForSeconds(0.5f);
+            _hud.ShowLeaderboardSkills();
+            yield return new WaitForSeconds(1f);
+            ScreenCapture.CaptureScreenshot(basePath + "-leaderboard-skills.png");
+            yield return new WaitForSeconds(0.5f);
+            _hud.ShowNews();
+            yield return new WaitForSeconds(1f);
+            ScreenCapture.CaptureScreenshot(basePath + "-news.png");
+            yield return new WaitForSeconds(0.5f);
+            _hud.ShowStory();
+            yield return new WaitForSeconds(3f);
+            ScreenCapture.CaptureScreenshot(basePath + "-story.png");
+            yield return new WaitForSeconds(0.5f);
+            _hud.ShowStory();
+            
             yield return new WaitForSeconds(1f);
             _hud.ShowMiniGame(SkillBranch.Sport);
             yield return new WaitForSeconds(2.5f);
@@ -198,9 +237,9 @@ namespace Gotchi.Core
             yield return new WaitForSeconds(20f);
             ScreenCapture.CaptureScreenshot(basePath + "-results.png");
             yield return new WaitForSeconds(1f);
-            _hud.ShowMiniGame(SkillBranch.Warrior);
-            yield return new WaitForSeconds(2.2f);
-            ScreenCapture.CaptureScreenshot(basePath + "-arena.png");
+            _hud.ShowMiniGame(SkillBranch.PvP);
+            yield return new WaitForSeconds(5.5f);
+            ScreenCapture.CaptureScreenshot(basePath + "-battle.png");
             yield return new WaitForSeconds(0.5f);
             _hud.ShowMiniGame(SkillBranch.ExplorerAdventure);
             yield return new WaitForSeconds(2.2f);
@@ -270,8 +309,7 @@ namespace Gotchi.Core
             _ctx.Skills.AddXp(result.Branch, xp);
             _ctx.Level.AddXp(Mathf.Max(5, xp / 2));
             _ctx.Wallet.Add(CurrencyType.Soft, coins);
-            _ctx.Needs.Add(NeedType.Energy, -MiniGameEnergyCost);
-            _ctx.Needs.Add(NeedType.Happiness, MiniGameHappinessGain);
+            MiniGameNeeds.Apply(_ctx.Needs, result.Tier);   // playing feeds happiness, costs food, a wash and energy
 
             EmotionType reaction = !result.Won ? EmotionType.Embarrassment
                 : result.Score >= 300 ? EmotionType.Amazement

@@ -12,6 +12,8 @@ namespace Gotchi.UI
         public const float PressedScale = 0.94f;
         public const float OvershootScale = 1.03f;
 
+        public System.Action<bool> OnPressedChanged;
+
         private Vector3 _base = Vector3.one;
         private bool _down;
         private Coroutine _routine;
@@ -27,6 +29,7 @@ namespace Gotchi.UI
             if (_selectable != null && !_selectable.interactable) return;
             if (_routine == null) _base = transform.localScale;
             _down = true;
+            OnPressedChanged?.Invoke(true);
             Animate(_base * PressedScale, 0.07f, false);
         }
 
@@ -34,6 +37,7 @@ namespace Gotchi.UI
         {
             if (!_down) return;
             _down = false;
+            OnPressedChanged?.Invoke(false);
             Animate(_base * OvershootScale, 0.08f, true);
         }
 
@@ -41,6 +45,7 @@ namespace Gotchi.UI
         {
             if (!_down) return;
             _down = false;
+            OnPressedChanged?.Invoke(false);
             Animate(_base, 0.1f, false);
         }
 

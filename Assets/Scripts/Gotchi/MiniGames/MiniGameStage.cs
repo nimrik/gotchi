@@ -1,5 +1,6 @@
 using System.Collections;
 using Gotchi.Core;
+using Gotchi.Creature;
 using Gotchi.Data;
 using Gotchi.UI;
 using UnityEngine;
@@ -9,6 +10,10 @@ namespace Gotchi.MiniGames
     public static class MiniGameContext
     {
         public static SpeciesType Species = SpeciesType.Cat;
+        public static string PetName = "Mochi";
+        public static int Level = 1;
+        public static string RivalName = "Rival";
+        public static SpeciesType RivalSpecies = SpeciesType.Fox;
     }
 
     // The player's own creature inside a mini-game: placed on the play area, reacts and lunges.
@@ -31,6 +36,8 @@ namespace Gotchi.MiniGames
         }
 
         public void React(EmotionType emotion) => Pet.SetEmotion(emotion, true);
+        public void Play(OneShot clip, float direction = 1f) => Pet.Play(clip, direction);
+        public void Face(float direction) => Pet.SetFacing(direction);
 
         // Dash horizontally toward a point in play-area local space, then settle back.
         public void LungeTo(float localX)
@@ -38,6 +45,7 @@ namespace Gotchi.MiniGames
             if (_lunge != null) _host.StopCoroutine(_lunge);
             float half = _playArea.rect.width / 2f;
             float target = Mathf.Clamp(localX - (Anchor.anchorMin.x - 0.5f) * _playArea.rect.width, -half * 0.6f, half * 0.6f) * 0.35f;
+            Pet.Play(OneShot.Attack, localX >= 0f ? 1f : -1f);
             _lunge = _host.StartCoroutine(Lunge(target));
         }
 

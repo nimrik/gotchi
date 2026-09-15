@@ -121,6 +121,53 @@ frame" to future prompts so each generation is one clean, individually-usable as
 treatment; per-species accent colors; whether the ninja-panda/scared-panda outliers represent a wanted
 alternate style (e.g. a battle-pose variant) worth folding in later.
 
+## The animal rig (decided 2026-09-14, third pass — replaces the blob)
+
+The user rejected every blob-shaped version ("scary, not cute") and, via their reference folder plus a
+"Collect cute pets" screenshot, pinned the look: **a real four-legged animal** with a big round head, small
+face on the front half of the head, dot eyes with one catchlight, pink cheeks, flat colour with **one darker
+shadow tone**, a **thin dark outline**, standing on a soft shadow disc. Smooth vector, not pixel (a pixel pass
+can be added later as a render setting). And "full-fledged animation, not crude".
+
+**Rig** (`Creature/CreatureBody`, one uGUI `MaskableGraphic` per creature, rebuilt every frame from
+`Creature/VectorMesh`): spine (hip + shoulder points), head with pitch and yaw, four two-bone legs solved by
+analytic IK (front knees bend back, hind knees forward; far legs drawn behind and in the shadow tone), tail
+chain of three joints, ears, all as `Spring`s. Body plans: `Quadruped` (11 species), `Upright` (penguin),
+`Flat` (seal). Species = data in `Creature/CreatureLook` (palette, ears, tail, nose, marks).
+
+**Animation** (`Creature/CreatureBrain`): a lateral-sequence walk gait drives the feet (stance/swing, stride
+scales with speed, body bob, head bob, tail sway); stances Stand / Sit / Lie / Sleep blend through the joint
+springs and cycle on a calm schedule when the pet is left alone (stand 6–14 s → sit 14–30 s → lie …); idle
+behaviours every 7–16 s (look around, ear twitch, tail flick, groom with a raised paw, the full cat stretch,
+sniff, shake, yawn); breathing, blinks, gaze saccades; nothing hops on its own. Game reactions are `OneShot`s
+(hop, wiggle, pat, wave, tail flick, pounce attack, hurt, faint on its side, eat, celebrate, dance, nod, shiver,
+stretch, yawn, shake, ear twitch, look around, sniff, groom). Physics from the previous pass stays: gravity,
+friction, walls, pick-up (hangs from the grab point), throw, landing crouch; in the air the legs dangle.
+
+**Layout (units, ground = 0, +x = facing):** hip (−12, 19), shoulder (9, 20), head centre = shoulder + (6, 19),
+head 18.5 × 17, face centre = head + (2, −1): eyes at ±6.5 (3.4 × 3.8), blush at ±11.5, nose at (0.5, −3.2),
+mouth 5.5 wide just below; legs attach at hip/shoulder, segments 10 + 10, rest feet at x = −15 / 7 (far),
+−11 / 12 (near); tail root = hip + (−7, 2), joints 9 / 8 / 7 long, rest curl 125° → 85° → 50°.
+
+**Review tooling:** `Gotchi -lab <dir>` writes `lab-species.png`, `lab-emotions.png` and strips/stills for
+idle, walk, sit, groom, lie, sleep, stretch, poke, hold, dangle, drop, attack, joy, faint, beanie, scarf.
+
+Style boards used to get here (Artifacts): "Gotchi Style Board" (12 rendering styles, all rejected — the
+silhouette was the problem, not the shading) and "Mochi Anatomy Board" (three sitting poses; "better").
+
+## The 3D cat (2026-09-14, from the user's tuxedo-cat reference)
+
+The user supplied a flat-colour illustration (chibi tuxedo cat hugging a fish plush, left cat) and asked for a
+full 3D version in the same cartoon style. Built procedurally in Blender (`Tools/blender/build_cat.py`):
+head 1.20 × 0.98 × 0.90 over a 0.70 body, big pointed ears with pink inners, slanted almond eyes (yellow,
+vertical dark pupils, one small glint), a small white muzzle joining a white chest bib, one white glove arm
+and a white-tipped other paw, white socks, short curled tail; fur is warm dark brown (#3C2A26), outline
+near-black, three cream whiskers per side. Patch borders are baked to textures (`cat_head.png`,
+`cat_body.png`) so they stay smooth. 45 emotions map onto: happy arcs / shut lines / open eyes with a
+scalable eye bone, smile / frown / open mouth, tiltable brows, blush, tear, sweat, heart, plus dirt, drool
+and four accessories. 27 clips: 7 loops + 20 one-shots (see `Creature3D/Cat3DView`). Review with
+`Gotchi -lab <dir>`; the other 12 species remain the 2D animal rig below until they get models.
+
 ## Tooling
 
 - No in-house 2D/3D art skill on the team currently — AI generation tools (e.g. PixelLab.ai and others

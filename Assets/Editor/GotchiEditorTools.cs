@@ -174,9 +174,9 @@ namespace Gotchi.EditorTools
             shop.Buy(ShopCatalog.Find("scarf_star"), r => ok = r.Success);
             Check(!ok, "cannot afford 250-coin scarf");
             shop.Buy(ShopCatalog.Find("gems_small"), r => ok = r.Success);
-            Check(ok && wallet.Get(CurrencyType.Premium) == 50, "mock real-money purchase grants gems");
+            Check(ok && wallet.Get(CurrencyType.Premium) == 50, "mock real-money purchase grants hearts");
             shop.Buy(ShopCatalog.Find("coins_pack"), r => ok = r.Success);
-            Check(ok && wallet.Get(CurrencyType.Premium) == 30 && wallet.Get(CurrencyType.Soft) == 560, "gems buy coins");
+            Check(ok && wallet.Get(CurrencyType.Premium) == 30 && wallet.Get(CurrencyType.Soft) == 560, "hearts buy coins");
             shop.Buy(ShopCatalog.Find("scarf_star"), r => ok = r.Success);
             Check(ok && shop.Owns(ShopCatalog.Find("scarf_star")) && data.equippedCosmeticId == "scarf_star", "cosmetic owned and worn after purchase");
             shop.Buy(ShopCatalog.Find("scarf_star"), r => ok = r.Success);
@@ -192,6 +192,14 @@ namespace Gotchi.EditorTools
             Check(ok && boosts.StreakShields == 1 && boosts.ConsumeStreakShield() && boosts.StreakShields == 0, "streak shield bought and consumed");
             shop.Buy(ShopCatalog.Find("rug_mint"), r => ok = r.Success);
             Check(ok && data.rugId == "rug_mint" && shop.IsEquipped(ShopCatalog.Find("rug_mint")), "rug bought and applied");
+            Check(shop.CurrentBackground == ShopService.DefaultBackgroundId && shop.OwnsBackground(ShopService.DefaultBackgroundId), "default background is owned from the start");
+            shop.SetBackground("bg_night");
+            Check(shop.CurrentBackground == ShopService.DefaultBackgroundId, "cannot switch to a background you do not own");
+            wallet.Add(CurrencyType.Soft, 300);
+            shop.Buy(ShopCatalog.Find("bg_meadow"), r => ok = r.Success);
+            Check(ok && shop.CurrentBackground == "bg_meadow" && shop.IsEquipped(ShopCatalog.Find("bg_meadow")), "background bought and applied");
+            shop.SetBackground(ShopService.DefaultBackgroundId);
+            Check(shop.CurrentBackground == ShopService.DefaultBackgroundId && shop.Owns(ShopCatalog.Find("bg_meadow")), "switching back to the default keeps the bought set");
 
             // Automation
             var toybox = AutomationSystem.Catalog[3];

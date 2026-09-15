@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Gotchi.Core;
 using Gotchi.Data;
 using Gotchi.MiniGames;
+using Gotchi.Systems;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -52,6 +53,7 @@ namespace Gotchi.UI
 
             var close = UIFactory.CreateButton("Close", safe, "Back", UIFactory.Card, Close, 30, host);
             UIFactory.Place((RectTransform)close.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-170f, 28f), new Vector2(170f, 104f));
+            UIFactory.FitToLabel(close, 200f);
 
             Root.SetActive(false);
         }
@@ -114,6 +116,8 @@ namespace Gotchi.UI
             UIFactory.Place(score.rectTransform, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(20f, -10f), new Vector2(-20f, 70f));
             var rewards = UIFactory.CreateText("Rewards", card.transform, $"+{result.XpReward} XP   +{result.CoinReward} coins" + (result.Tier > 1 ? $"\nTier {result.Tier} · ×{result.RewardMultiplier:0.##}" : ""), 30, UIFactory.PinkDark, TextAnchor.MiddleCenter, true);
             UIFactory.Place(rewards.rectTransform, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(20f, -80f), new Vector2(-20f, -20f));
+            var needs = UIFactory.CreateText("Needs", card.transform, MiniGameNeeds.Describe(result.Tier), 20, UIFactory.Muted, TextAnchor.MiddleCenter);
+            UIFactory.Place(needs.rectTransform, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(20f, -116f), new Vector2(-20f, -84f));
 
             var again = UIFactory.CreateButton("Again", card.transform, "Play again", UIFactory.Pink, () => Open(_currentInfo), 30, _host);
             UIFactory.Place((RectTransform)again.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-170f, 34f), new Vector2(170f, 110f));

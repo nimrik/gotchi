@@ -47,21 +47,35 @@ scripts and CI.
 
 ## Look & feel
 
-**Rendering.** The UI renders natively at any resolution with anti-aliased procedural shapes; only the
-character is pixel art — `CreatureSprites` resamples each sprite to a fixed 112-px grid with point filtering so
-it stays chunky on every screen.
+**Rendering.** The UI renders natively at any resolution with anti-aliased procedural shapes. The character
+is not a sprite at all: `Creature/CreatureBody` is a custom `MaskableGraphic` that rebuilds a feather-edged
+vector mesh every frame (see `03-art-direction.md`, "Living jelly character").
 
 The UI is fully code-drawn (`UIFactory`), no image assets: rounded cards with soft shadows, a cream/peach
 palette with pastel accents, Fredoka (headings) and Varela Round (body); Pixelify Sans kept as a fallback — all SIL Open Font License,
 licenses in `Assets/Resources/Fonts/`. Controls are icon-only, drawn procedurally from circles and rounded
-rects (`UIFactory.CreateIcon`: cookie, bubbles, moon, ball, sparkle, bag, heart, coin, gem).
+rects (`UIFactory.CreateIcon`: cookie, bubbles, moon, ball, sparkle, bag, heart, coin).
 
 Home layout: header = currency pills + round Skills/Shop buttons; the middle is a cozy procedural room
 (`RoomView`: floor, window with sun and a drifting cloud, swaying plant, rug) with the creature front and
 centre, a speech bubble showing its mood, a tappable Journey card (evolution stage, leading branch,
 login streak → opens Skills) and a status bar with a "wish" chip that names the lowest need and performs
 that care action when tapped; a compact icon meter strip; and a bottom dock of four round
-care buttons that show a cooldown badge. The creature (`PetPortraitView`) is a procedural placeholder built
-from circles — species colours/ears, sparkle-catchlight eyes, blush, and per-category expressions
-(crescent smiles/frowns/happy eyes via masked circles). It will be replaced by the real sprite set from
+care buttons that show a cooldown badge. The creature (`PetPortraitView` → `Creature/CreatureBody`) is a soft-body
+vector mesh — squircle marshmallow silhouette on 48 radial springs, warped features, glossy eyes with
+morphing lids, per-species ears/tail/markings — driven by `CreatureBrain` (mood posture, breathing, gaze,
+blinks, random fidgets, hop locomotion, one-shot reactions) and deformable by touch anywhere. It will be replaced by the real sprite set from
 `09-pets-and-emotions.md`, which plugs into the same view.
+
+**The Cat is 3D (2026-09-14).** `PetPortraitView` routes `SpeciesType.Cat` to `Creature3D/Cat3DView`: a Blender
+model (`Assets/Resources/Creatures/Cat3D/cat.fbx` + baked patch textures) on a private off-screen stage,
+rendered by its own camera into a render texture shown through a `RawImage` in the same pet holder, so
+overlays, bubbles and layout are untouched. Look = flat colours + inverted-hull outline
+(`Assets/Resources/Shaders/CatToon*.shader`, built-in RP, no scene lights). Animation = legacy `Animation`
+clips authored in Blender (loops Idle/Happy/Sad/Sleep/Alert/Walk/Fainted on layer 0, one-shots additive on
+layer 1); the face = feature meshes toggled by name (mouths, brows, blush, tears, hearts, dirt, accessories)
+plus eye/brow bones scaled/rotated in `LateUpdate`. Touch = ray-vs-bone-sphere hit test through the render
+texture (tap / hold / rub-to-pet / lift-and-drop). To change the model: edit `Tools/blender/build_cat.py` and run
+`/Applications/Blender.app/Contents/MacOS/Blender -b -P Tools/blender/build_cat.py -- --fbx
+Assets/Resources/Creatures/Cat3D/cat.fbx --preview /tmp/cat-preview` (Blender 5.2; brew install --cask
+blender). `Assets/Editor/CatModelImporter.cs` fixes the import settings (legacy rig, loop clips).
