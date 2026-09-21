@@ -104,6 +104,8 @@ $B -b -P Tools/blender/build_cat2.py -- --anim /tmp/gotchi-anim --anim-only Happ
 - A bare Unity project lacks uGUI; the package is in the manifest, leave it there.
 - A layout group with force-expand overrides its children's preferred sizes.
 - Desktop players pause when unfocused unless Run In Background is on (capture runs depend on it).
+- A capture run renders no frames while the Mac's display is asleep, so it hangs before the first screenshot.
+  Wake the display and hold it awake for the run: `caffeinate -u -t 5; caffeinate -d Builds/Mac/Gotchi.app/Contents/MacOS/Gotchi -tempsave -screenshot-battle <base>`.
 - Unity draws the ink outline per mesh, so any feature that can overlap itself must be one mesh.
 - `Destroy` waits for the end of the frame: deactivate a row before destroying it when a list is rebuilt, or the
   layout still counts it (`PagedPanel.Rebuild` does this).
