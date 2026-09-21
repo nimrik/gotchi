@@ -12,26 +12,16 @@ namespace Gotchi.UI
 {
     public enum PetPart { Head, Body, Paws, Tail }
 
-    // The pet as seen everywhere (room, shop previews, onboarding, story, mini-games). The Cat is the 3D model
+    // The pet as seen everywhere (room, shop previews, onboarding, story, battles). The Cat is the 3D model
     // (Cat3DView: Blender FBX on an off-screen stage shown through a RawImage); every other species is the
-    // procedural 2D CreatureBody. Both sit behind the same API: mood glow, off-body care overlays (rain cloud,
-    // thought bubble), touch wiring and idle wandering.
+    // procedural 2D CreatureBody. Both sit behind the same API: a face, clips, touch wiring and idle wandering.
+    //
+    // There is no emotion system any more (2026-09-21). What is left of it is SetFace: the named faces
+    // (EmotionType + Expressions) are the renderer's vocabulary of expressions, used by animation code that wants
+    // the cat to look hurt, proud or annoyed for a moment. Nothing computes a mood, nothing shows one, and the
+    // care overlays that hung off the old needs (rain cloud, thought bubble, dirt, drool, sleepiness) are gone.
     public class PetPortraitView
     {
-        private static readonly Dictionary<EmotionCategory, Color> Moods = new Dictionary<EmotionCategory, Color>
-        {
-            { EmotionCategory.Joy, UIFactory.Butter },
-            { EmotionCategory.Sadness, UIFactory.Sky },
-            { EmotionCategory.Anger, UIFactory.Coral },
-            { EmotionCategory.Fear, UIFactory.Lavender },
-            { EmotionCategory.Disgust, UIFactory.Mint },
-            { EmotionCategory.Surprise, UIFactory.Hex("FFC9A3") },
-            { EmotionCategory.GuiltAndShame, UIFactory.Hex("F5C6D0") },
-            { EmotionCategory.ConnectionAndCare, UIFactory.Pink },
-            { EmotionCategory.Vulnerability, UIFactory.Hex("D8DCE8") },
-            { EmotionCategory.InterestAndAwe, UIFactory.Hex("B5EAF2") },
-        };
-
         public readonly float Size;
         public readonly CreatureBody Body;      // null when the pet is the 3D cat
         public readonly Cat3DView Cat3D;        // null for the 2D species
@@ -48,62 +38,71 @@ namespace Gotchi.UI
 
         private readonly MonoBehaviour _host;
         private readonly RectTransform _holder;
-        private RectTransform _rainCloud, _thought, _thoughtIcon;
-        private UIFactory.IconKind? _thoughtKind;
-        private bool _tired, _wandering;
+        private bool _wandering, _wornOut;
         private LoopClip _emotionLoop = LoopClip.Idle;
 
-        public static Color MoodColor(EmotionCategory category) => Moods[category];
-
-        public PetPortraitView(Transform parent, SpeciesType species, MonoBehaviour host, float size)
+        // `coat` re-colours the 3D cat (other players' cats); null is the player's own cocoa cat.
+        public PetPortraitView(Transform parent, SpeciesType species, MonoBehaviour host, float size, CatCoat coat = null)
         {
             _host = host;
             Size = size;
             _holder = UIFactory.CreateRect("PetHolder", parent);
             if (species == SpeciesType.Cat)
             {
-                try { Cat3D = new Cat3DView(_holder, host, size); }
+                try { Cat3D = new Cat3DView(_holder, host, size, coat); }
                 catch (Exception e) { Debug.LogError("[PetPortraitView] 3D cat failed, falling back to 2D: " + e); }
             }
             if (Cat3D == null) Body = CreatureBody.Create(_holder, species, size);
-            BuildOverlays();
-            SetEmotion(EmotionType.Joy, false);
+            SetFace(EmotionType.Satisfaction, false);
             if (!Is3D) host.StartCoroutine(IdleLife());
         }
 
-        // ---- emotion ----
+        // ---- face ----
 
-        public void SetEmotion(EmotionType emotion, bool animate)
+        // Puts one of the named faces on the pet (and the idle loop that goes with it). Presentation only.
+        public void SetFace(EmotionType face, bool animate)
         {
-            var category = EmotionCatalog.GetCategory(emotion);
-            var face = Expressions.For(emotion);
-            _emotionLoop = face.Loop;
+            var target = Expressions.For(face);
+            _emotionLoop = target.Loop;
             if (Is3D)
             {
-                Cat3D.SetFace(face);
+                Cat3D.SetFace(target);
                 ApplyLoop();
-                Cat3D.Mood = Moods[category];
-                if (!animate) { Cat3D.SnapMood(); return; }
-                if (face.Enter.HasValue) Cat3D.Play(face.Enter.Value);
+                if (animate && target.Enter.HasValue) Cat3D.Play(target.Enter.Value);
                 return;
             }
-            Body.Face = face;
+            Body.Face = target;
             ApplyLoop();
-            Body.Mood = Moods[category];
-            if (!animate) { Body.SnapMood(); return; }
-            if (face.Enter.HasValue) Body.Brain.Play(face.Enter.Value);
+            if (animate && target.Enter.HasValue) Body.Brain.Play(target.Enter.Value);
         }
 
         private void ApplyLoop()
         {
-            var loop = _tired ? LoopClip.Sleep : _emotionLoop;
-            if (Is3D) Cat3D.SetLoop(loop); else Body.Brain.SetLoop(loop);
+            if (Is3D) Cat3D.SetLoop(_emotionLoop); else Body.Brain.SetLoop(_emotionLoop);
+        }
+
+        // Worn out (under a tenth of its health): the cat lies down until it has rested enough to fight again.
+        public void SetWornOut(bool wornOut)
+        {
+            if (wornOut == _wornOut || !Is3D) return;
+            _wornOut = wornOut;
+            if (wornOut) Cat3D.Play(OneShot.Faint); else Cat3D.Revive();
         }
 
         public void Play(OneShot clip, float direction = 1f) { if (Is3D) Cat3D.Play(clip, direction); else Body.Brain.Play(clip, direction); }
         public void SetLoop(LoopClip loop) { _emotionLoop = loop; ApplyLoop(); }
         public void SetFacing(float direction) { if (Is3D) Cat3D.Facing = direction; else Body.Facing = direction; }
+
+        // Battle staging: the player's cat is seen from behind, looking up the field at its rival, mouth shut.
+        public void StageForBattle(float facing, bool backView, bool keepMouthClosed)
+        {
+            if (Is3D) Cat3D.Stage(facing, backView, keepMouthClosed); else Body.Facing = facing;
+        }
         public void Celebrate() => Play(OneShot.Celebrate);
+
+        // Walk loop on the spot while the owner slides the pet across the screen (leaving in a huff, coming back).
+        public void March(float facing, float animSpeed = 1f) { if (Is3D) Cat3D.StartWalkInPlace(facing, animSpeed); else Body.Facing = facing; }
+        public void StopMarch() { if (Is3D) Cat3D.StopWalkInPlace(); else Body.Facing = 1f; }
 
         // Body tap: a jelly wiggle (no hop — the creature stays calm unless the game asks for a jump).
         public void Boop() => Play(OneShot.Wiggle);
@@ -132,7 +131,7 @@ namespace Gotchi.UI
             {
                 yield return new WaitForSeconds(UnityEngine.Random.Range(20f, 45f));
                 if (Root == null || Body.Brain.Fainted || Body.Touching || !Body.Grounded) continue;
-                if (_allowWander && !_wandering && !_tired && UnityEngine.Random.value < 0.5f) _host.StartCoroutine(Wander());
+                if (_allowWander && !_wandering && UnityEngine.Random.value < 0.5f) _host.StartCoroutine(Wander());
             }
         }
 
@@ -193,66 +192,6 @@ namespace Gotchi.UI
                 yield return null;
             }
             if (heart != null) UnityEngine.Object.Destroy(heart.gameObject);
-        }
-
-        // ---- care conditions ----
-
-        private void BuildOverlays()
-        {
-            _rainCloud = UIFactory.CreateRect("RainCloud", Root);
-            _rainCloud.anchoredPosition = new Vector2(-Size * 0.42f, Size * 0.5f);
-            foreach (var (x, y, d) in new[] { (0f, 6f, 64f), (-30f, -4f, 48f), (30f, -2f, 50f) })
-            {
-                var puff = UIFactory.CreateCircle("Puff", _rainCloud, UIFactory.Hex("C9C4D2"), d);
-                puff.rectTransform.anchoredPosition = new Vector2(x, y);
-                puff.raycastTarget = false;
-            }
-            foreach (float x in new[] { -22f, 0f, 22f })
-            {
-                var drop = UIFactory.CreateRounded("Drop", _rainCloud, UIFactory.Sky, 0.3f);
-                drop.rectTransform.sizeDelta = new Vector2(8f, 22f);
-                drop.rectTransform.anchoredPosition = new Vector2(x, -40f);
-                drop.raycastTarget = false;
-            }
-
-            _thought = UIFactory.CreateRect("Thought", Root);
-            _thought.anchoredPosition = new Vector2(Size * 0.42f, Size * 0.56f);
-            foreach (var (x, y, d) in new[] { (-34f, -52f, 14f), (-20f, -34f, 22f), (0f, 0f, 96f) })
-            {
-                var puff = UIFactory.CreateCircle("Puff", _thought, Color.white, d);
-                puff.rectTransform.anchoredPosition = new Vector2(x, y);
-                puff.raycastTarget = false;
-            }
-            SetConditions(100f, 100f, 100f, 100f);
-        }
-
-        public void SetConditions(float hunger, float hygiene, float energy, float happiness)
-        {
-            const float low = 35f;
-            bool tired = energy < low, dirty = hygiene < low, sad = happiness < low, hungry = hunger < low;
-            if (Is3D) Cat3D.SetConditions(dirty, hungry);
-            else { Body.Tired = tired; Body.Dirty = dirty; Body.Hungry = hungry; }
-            _rainCloud.gameObject.SetActive(sad);
-            if (tired != _tired)
-            {
-                _tired = tired;
-                if (Is3D) Cat3D.SetSleeping(tired); else Body.Sleeping = tired;
-                ApplyLoop();
-            }
-
-            UIFactory.IconKind? craving = null;
-            float lowest = low;
-            if (hunger < lowest) { lowest = hunger; craving = UIFactory.IconKind.Cookie; }
-            if (hygiene < lowest) { lowest = hygiene; craving = UIFactory.IconKind.Shower; }
-            if (energy < lowest) { lowest = energy; craving = UIFactory.IconKind.Moon; }
-            if (happiness < lowest) craving = UIFactory.IconKind.Heart;
-            _thought.gameObject.SetActive(craving.HasValue);
-            if (craving == _thoughtKind) return;
-            _thoughtKind = craving;
-            if (_thoughtIcon != null) UnityEngine.Object.Destroy(_thoughtIcon.gameObject);
-            if (!craving.HasValue) return;
-            _thoughtIcon = UIFactory.CreateIcon(craving.Value, _thought, 54f, Color.white);
-            _thoughtIcon.anchoredPosition = Vector2.zero;
         }
 
         // ---- cosmetics (drawn by the body so they deform with it) ----

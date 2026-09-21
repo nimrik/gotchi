@@ -1,149 +1,101 @@
 # Gotchi — Game Design
 
-Status: draft v0.1 — captures core loop decisions; numbers/tuning are placeholders until prototyped.
+Status: v0.2 (2026-09-21). The rules of the battle itself are in `13-pvp-design.md`; this guide is the shape
+of the whole game around it. Numbers are first guesses until they have been played.
 
-## Core loop — three layers
+## The loop
 
-### Layer 1: Basic needs (early game)
-- 4 basic needs, **finalized**: **Hunger, Hygiene, Energy, Happiness** (classic Tamagotchi set).
-- Player manually satisfies these; this is the emotional "direct care" hook the genre is loved for.
-- Mini-games spend needs and give one back: each round costs a little food, hygiene and energy (more at
-  higher tiers) and raises happiness, so training and caring alternate instead of competing.
-- Pet **never dies** and is generally forgiving — appropriate for the target age group and for
-  Kids Category sentiment. Neglect should have visible-but-gentle consequences (sad/sluggish states),
-  not loss states.
+**Fight, rest, build, fight again.**
 
-### Layer 2: Automation
-- As the player progresses, tools/upgrades let basic needs become partially automated.
-- Automation should reduce *friction*, not remove the emotional core — the pet should still be visibly
-  present and interacted with, just less about manual meter-topping.
+1. **Fight.** A ranked battle in the Battle Club against another keeper's cat. It costs health and mana, and
+   both bars stay where the fight left them.
+2. **Rest.** Back home the cat gets them back: the camp (REST, FOCUS), a Treat, an item from the bag, or ten
+   quiet minutes. FEED and GROOM lend attack and defense to the next few fights.
+3. **Build.** Coins from fights go into training, moves, charms and items; the rival for the next fight is
+   shown in advance, so the build can answer it.
+4. Rating, leagues, a first-win bonus and three daily quests give the next fight a reason.
 
-### Layer 3: Skill tree / strategy — finalized branches
+Everything the loop needs is one tap from the home screen: BATTLE, TRAIN, MOVES, BAG, and the camp block.
 
-| Branch | Focus | Mini-game type | Notes |
-|---|---|---|---|
-| **Sport** | Physical stats | Quick tap/reflex mini-games (2D) | Straightforward, fast core-loop-friendly sessions. |
-| **Social** | Language quizzes | Puzzle/matching-style quiz format | Genuine edutainment angle — a real differentiator, not just a flavor branch. Worth highlighting in marketing. |
-| **PvP** *(renamed from Warrior 2026-09-14)* | Battles | Turn-based battles in the Pokémon Sapphire mould: FIGHT / ITEM / CHEER / RUN, four moves with PP, four types (Normal, Fire, Water, Grass), speed order, STAB, critical hits, stat stages, narrated text box. Solo vs. other players' pets (mock roster) now; live PvP later. | Keep visually stylized/kawaii rather than gritty — mild cartoon-violence framing is fine and expected to land around a 9+ content rating, but worth keeping intentional rather than accidental. |
-| **Hunter** | Survival/tracking | PvE mini-games, solo | Singleplayer only — co-op lives in Explorer/Adventure instead (see below), since the two are mechanically distinct (solo PvE vs. co-op-with-a-friend). |
-| **Science** | General knowledge | Puzzle/matching-style quiz format | Second edutainment branch, pairs with Social for a "smart pet" positioning angle. |
-| **Nature** *(replaced Fashion on 2026-09-13)* | Garden / growing | Timing mini-game (tap when the marker is in the green zone; the sprout grows per hit) | Cosmetics stay a pure shop feature; Nature gives the roster a calm, cozy branch and a distinct mechanic. |
-| **Explorer/Adventure** *(7th branch, confirmed)* | World exploration, resource gathering | Co-op PvE (play with a friend vs. enemies) | Dedicated home for co-op — one side (player + friend) against enemies, distinct from Hunter's solo PvE. |
+## The camp (replaced the four needs on 2026-09-21)
 
-- Branch choices drive the creature's **evolution branch** — this is the long-term differentiation from
-  "pet that never changes." **Decided: single-branch-locked** — the creature evolves down whichever one
-  branch the player has invested in most, rather than a blend across branches. Chosen for simpler art
-  scope (one distinct evolved form per branch) and simpler save-state representation, matching the team's
-  beginner Unity/C# capacity.
-- Cost/time curves scale gradually and mathematically (Clash of Clans town-hall-style scaling) — see the
-  **Economy curve** section below for the proposed numbers; tune them against real play, not on paper.
+| Action | Gives | With its helper |
+|---|---|---|
+| REST | health +40% | +60% (Cozy Nest) |
+| FOCUS | mana +40% | +60% (Quiet Corner) |
+| FEED | "Fed": ATTACK +10% for the next 3 battles | 5 battles (Snack Dispenser) |
+| GROOM | "Groomed": DEFENSE +10% for the next 3 battles | 5 battles (Grooming Kit) |
+| Treat (chip in the status block) | 15% of both bars | |
 
-## Economy curve (proposal, 2026-09-14 — not yet implemented)
+- Each action has a 60 second cooldown. A press that would do nothing is refused (full bar, full buff).
+- A buff is counted in battles, not minutes. Every fight that is fought to the end uses one charge; running
+  from a fight uses none.
+- **Nothing decays.** No meter runs down while the player is away, nothing is lost by not playing, and the cat
+  never dies. Health and mana even refill on their own while the app is closed.
+- A camp action gives 5 pet XP, so looking after the cat is never wasted time.
+- Code: `Systems/CampSystem`. It plugs into the battle rules through `IBattleBuffs`.
 
-Goal: an easy, generous start, then a slope that keeps getting steeper so every next level, stage and
-helper asks for visibly more resources than the last. Three resources, each with one job:
+## Progression
 
-| Resource | Role | Earned by | Spent on |
-|---|---|---|---|
-| **XP** | progress (level, story chapters) | playing: care, cuddles, mini-games | nothing — it only accumulates |
-| **Coins** | the working currency | mini-games, login streak, level-ups, codes | care refills, helpers, helper upgrades, decor, evolution ceremonies |
-| **Hearts** | love the pet gives back (premium) | level-ups (+5), every 7th streak day (+10), bought | bonuses, premium looks, Starry Night; never required to progress |
+| Track | Grows by | Gives |
+|---|---|---|
+| **Pet level** (max 12) | battles (half the battle XP), camp actions (+5), helpers (+20) | base stats, the training cap (level + 1), a story chapter and 5 hearts per level |
+| **Battle XP** | every fight (40 + 10 per league on a win, 15 on a loss, 5 for running) | the evolution stage: one per 250 XP, five stages; helpers unlock at 100 / 200 / 300 / 400 |
+| **Training** | coins, four stats, ten ranks each | +5% of the base stat per rank |
+| **Moves, charms, bag** | coins, gated by league | the choices inside a fight |
+| **Rating** | winning | leagues, which raise coin rewards and unlock moves; promotion rewards |
 
-**Level curve (XP to reach the next level).** Geometric instead of the current quadratic so the first
-levels fly and the last ones take real commitment: `XP(L→L+1) = 100 × 1.45^(L−1)`.
+Level XP: `XP(n) = 60(n-1)² + 40(n-1)` in total to reach level n (`LevelSystem`).
 
-| Level | XP for next | Cumulative | Expected time (daily 3-min sessions) |
-|---|---|---|---|
-| 1 → 2 | 100 | 100 | first session |
-| 2 → 3 | 145 | 245 | day 1 |
-| 3 → 4 | 210 | 455 | day 2 |
-| 5 → 6 | 442 | 1,340 | end of week 1 |
-| 8 → 9 | 1,350 | 4,300 | week 3 |
-| 11 → 12 | 4,100 | 12,200 | month 2–3 |
+**Leaning.** The status block names what the build adds up to: the style and the most trained stat together
+(Claw + attack = Fighter, Fluff + defense = Guardian, Trick + speed = Shadow, twelve in all, plus Rookie and
+All-rounder). It is a label for the player, and later for other players. It changes nothing in a fight. Table in
+`09-pets-and-emotions.md`.
 
-XP income per session (unchanged sources, all fixed, no randomness): care +2 each (20 s cooldown), cuddle
-+15 (45 s), mini-game 5–90 × tier multiplier — roughly 120 XP/session at the start, 250+ once tiers rise, so
-the table above holds without grinding.
+**Evolution.** Five stages driven by battle XP. The stages have no looks of their own yet (open question in
+`03-art-direction.md`).
 
-**Evolution stages (skill XP, per branch).** Today every stage costs a flat 250 XP. Proposed cumulative
-thresholds `250 × 1.6^(n−1)`: stage 2 at 250, 3 at 650, 4 at 1,290, 5 at 2,310 — plus an **evolution
-ceremony** that costs coins (`200 × 2^(n−2)`: 200, 400, 800, 1,600) so evolving is a real save-up goal,
-the "you need more resources to progress" gate the design asks for. Lock-in stays at 500 XP in one branch.
+## Helpers
 
-**Coins: income and sinks that both scale.**
-- Income grows with the pet: mini-game coins `(25 win / 10 lose) × tier multiplier × (1 + 0.1 × level)`;
-  level-up bonus `50 × level`; streak `10 × day` capped at 50 (unchanged).
-- Helpers cost more each time you buy one: 150, 225, 340, 500 (×1.5 per helper owned), and each helper
-  has three upgrade tiers (decay ×0.6 → ×0.45 → ×0.3) at 2× the previous price.
-- Needs decay a little faster at each evolution stage (`× (1 + 0.1 × (stage − 1))`), so a stage-5 pet
-  needs helpers to stay cozy — automation becomes the answer to difficulty instead of more tapping.
-- Care refill (Full Refill) price rises with level: `40 + 10 × level`.
-- Decor/outfit prices are tiered by level (a few items unlock at L3, L6, L9) so there is always a next
-  thing to save for.
+Bought once with coins (150 each) when the battle XP is there. Each makes one camp action better for good (see
+the camp table). They used to slow the decay of a need; the ids stayed so old saves keep what they own.
 
-**Guard-rails.** Everything stays deterministic (no drops, no gacha). Hearts are never on the critical
-path: every stage and helper is reachable with coins and time alone (Apple 13+ positioning, no pay-to-win).
-The pet never dies; "harder" only ever means "slower and more to save up", never "punished".
+## Sessions
 
-**Rollout.** Implement the level curve and stage thresholds first (they are two formulas), then the
-ceremony cost and helper price ladder, then the decay scaling — each behind constants in `LevelSystem`,
-`SkillTreeSystem`, `AutomationSystem` and `NeedsSystem`, with the smoke test asserting the tables above.
-Old saves keep their XP; levels are recomputed from the new table on load.
+- A core session is **2 to 3 minutes**: one or two fights and a visit to the camp.
+- Longer play is possible and paced by health and mana, not by a wall: REST and FOCUS once a minute, items from
+  the bag, Full Recovery for 40 coins. Ten minutes away refills everything.
+- One notification at most: "rested and ready", never between 21:00 and 09:00, never about suffering.
 
-## Session design
+## What brings the player back
 
-- Target core session: **2–3 minutes** (Brawl Stars-style: quick, complete, satisfying).
-- Should support optional longer play (queue up another "match"/mini-game round rather than being forced out).
-- Real-time simulation: needs progress while app is closed.
-- Push notifications used to prompt care — must never be sleep-hour-intrusive, and (per Kids Category
-  norms) must avoid manipulative "your pet is suffering" framing.
+First win of the day (+50 coins), three daily quests on a calendar rotation (all three pay 3 hearts), win
+streaks, promotion rewards that cannot be bought, the rival card for the next fight, the login streak (10 coins
+per streak day up to 50, 10 hearts every seventh day), a story chapter per level, the rating board.
 
-## Difficulty modes
+## Deferred
 
-- **Normal** — standard pacing (default, and only mode for MVP).
-- **Hardcore** (future / v2+) — 1:1 real time-to-game time ratio. Meaningfully different simulation model;
-  deliberately deferred past MVP to avoid inflating QA/scope before the core loop is proven.
-
-## Pets
-
-- v1: single pet per player, chosen at start from a roster of 13 species — see `09-pets-and-emotions.md`.
-- Multiple/simultaneous pets, breeding, trading, etc. — explicitly deferred, revisit post-launch.
-
-## Emotional states
-
-- Full emotion taxonomy (10 categories, 45 sub-emotions) locked, each with a unique pixel-art state per
-  creature — see `09-pets-and-emotions.md` for the full list and the art-production scope notes. This is a
-  large art-asset surface; sequencing (which creature first) and variation count per state are still open.
-- Emotion → gameplay-state wiring (what triggers each state) is handled in code by the team, not specified
-  in the design docs.
-
-## Evolution & progression
-
-- Creature is level-based.
-- Branching evolutions driven by which skill-tree paths the player invests in — **single-branch-locked**:
-  the evolved form reflects the one branch invested in most, not a blend.
-- Visual distinctiveness per branch (7 branches → 7 evolved forms) — open, needs an art pass once the
-  mood board is locked.
-
-## Mini-games — directions confirmed
-
-- **Quick tap/reflex (2D)** — maps to the Sport branch.
-- **Turn-based Pokémon-style battles** — maps to the PvP branch (solo vs. mock rivals now, live PvP later).
-- **Puzzle/matching format** — used for both Social (language quizzes) and Science (general knowledge)
-  branches; same underlying mini-game structure, different content/question sets.
-- **PvE (solo)** — maps to the Hunter branch.
-- **Co-op** — maps to the Explorer/Adventure branch: player + friend on one side against enemies.
-- Not currently planned: rhythm/music mini-games, racing/obstacle mini-games — dropped from consideration
-  for now, can revisit post-launch.
-
-## Retention & long-term hooks
-
-- Login streaks.
-- Mini-game leaderboards / social rankings.
-- Push notifications (bounded — see session design).
-- Seasonal updates.
-- Unique/limited-time cosmetic items for creatures.
+- **The Wild.** A campaign of six areas with wild cats, finds and bosses was built and parked the same day
+  (`GameFeatures.Wild`). It comes back as a world to explore.
+- **More characters.** One cat today; other keepers' cats differ by coat. New animals arrive with the world.
+- **Live PvP, friend battles, real trading.** The rival source and the trade board are single seams in
+  `BattleSystem` for that.
+- **Hardcore mode** (1:1 real time), several pets, breeding, Android.
 
 ## Open questions
 
-- Whether automation tools are IAP-able or purely progression-earned (affects monetization doc).
+- Is the rest loop right (a fight of style basics spends about half the mana, FOCUS gives 40% a minute)? See
+  the open questions in `13-pvp-design.md`.
+- Should rating gains taper after many wins in a day, now that nothing else limits the number of fights?
+- A geometric level curve (`100 × 1.45^(L-1)` per level) and coin costs for evolution stages were proposed on
+  2026-09-14 for a steeper late game. Not implemented; revisit once the first ten levels have been played.
+- Does the home need something to do that is not preparation for a fight?
+
+## History
+
+v0.1 (2026-09-13) was a virtual pet in three layers: four needs that drained by the hour (hunger, hygiene,
+energy, happiness), helpers that slowed the drain, and a seven-branch skill tree (Sport, Social, PvP, Hunter,
+Science, Nature, Explorer) with one mini-game per branch and a single-branch-locked evolution. On 2026-09-21
+the game was refocused on battles: the six other mini-games were removed (the branch ids stay in the save
+format), the needs first became the battle condition and then gave way to the camp, and the emotion system was
+dropped (`09-pets-and-emotions.md`).

@@ -86,12 +86,12 @@ namespace Gotchi.UI
             if (chapter > level)
             {
                 _chapterLabel.text = $"CHAPTER {chapter} - LOCKED";
-                _pet.SetEmotion(EmotionType.Curiosity, true);
+                _pet.SetFace(EmotionType.Curiosity, true);
                 _dialog.Say($"Reach level {chapter} to read the next chapter.", _onClose);
                 return;
             }
             _chapterLabel.text = $"CHAPTER {chapter} OF {StoryBook.ChapterCount}";
-            _pet.SetEmotion(ChapterMoods[(chapter - 1) % ChapterMoods.Length], true);
+            _pet.SetFace(ChapterMoods[(chapter - 1) % ChapterMoods.Length], true);
             _dialog.Say(StoryBook.Chapter(chapter, _ctx.Data.petName), () => Play(chapter + 1));
         }
     }

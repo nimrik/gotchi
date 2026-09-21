@@ -1,81 +1,109 @@
 # Gotchi — Unity Setup & Code Map
 
-Status: v0.3 — the repo **is** the Unity project (Unity 6000.6.0f1, built-in render pipeline + uGUI).
-Verified end-to-end on 2026-09-12: Editor compile with zero errors/warnings, logic smoke test (140
-checks), Mac standalone build that runs with a clean Player log, and an iOS export whose Xcode project
-compiles through IL2CPP for arm64 (`** BUILD SUCCEEDED **`). Only Apple code-signing stands between
-that and a real iPhone. URP is deliberately not set up yet — the game is pure
-uGUI today; add URP when the 2D-world / 3D-creature art phase starts (`03-art-direction.md`).
+Status: v0.4 (2026-09-21). The repo **is** the Unity project: Unity **6000.6.2f1**, built-in render pipeline,
+uGUI. Verified: the Editor compiles with no errors or warnings, the logic smoke test passes (258 checks), the
+Mac build runs with a clean player log, and the iOS export compiles through IL2CPP for arm64. Only Apple code
+signing stands between that and a real iPhone.
 
 ## Opening the project
 
-1. **Unity Hub → Installs**: Unity **6000.6.0f1** with **iOS Build Support** (both already installed on the
-   dev Mac; Hub will offer the exact version if it's missing elsewhere).
-2. **Unity Hub → Add → Add project from disk** → this repo folder → open. First open builds `Library/`
-   (git-ignored) and takes a few minutes.
-3. Open `Assets/Scenes/Main.unity` and press **Play**. The scene holds one `Game` object with
-   `GameBootstrap`; everything else is created in code.
+1. Unity Hub → Installs: Unity 6000.6.2f1 with iOS Build Support.
+2. Unity Hub → Add → Add project from disk → this folder. The first open builds `Library/` (git-ignored) and
+   takes a few minutes.
+3. Open `Assets/Scenes/Main.unity` and press Play. The scene holds one `Game` object with `GameBootstrap`;
+   everything else is created in code.
 
-## Editor menu (Gotchi ▸ …)
+## The Gotchi menu, and the same from a shell
 
-`Assets/Editor/GotchiEditorTools.cs` adds a **Gotchi** menu so no step is manual:
+`Assets/Editor/GotchiEditorTools.cs` adds a **Gotchi** menu. Every item also runs headless.
 
 | Menu item | What it does |
 |---|---|
-| Create Main Scene | Recreates `Assets/Scenes/Main.unity` with `GameBootstrap` and registers it in Build Settings |
-| Configure Player Settings | Bundle id `com.gotchi.pet`, portrait, IL2CPP, iOS 15+, windowed 540×960 for desktop testing |
-| Run Logic Smoke Test | Exercises needs / emotions / skills / shop / automation / save / quiet hours with a fake clock — fails loudly on any regression |
-| Build Mac | Standalone build to `Builds/Mac/Gotchi.app` (fast way to run the game outside the Editor) |
-| Build iOS (Xcode project) | Exports `Builds/iOS/` — open `Unity-iPhone.xcodeproj` in Xcode to sign and run on an iPhone |
+| Create Main Scene | recreates `Assets/Scenes/Main.unity` and registers it in Build Settings |
+| Configure Player Settings | bundle id `com.gotchi.pet`, portrait, IL2CPP, iOS 15+, a 594 × 1056 window on desktop, Run In Background |
+| Run Logic Smoke Test | drives every rule system with a fake clock: battle rules, the camp, leanings, vitals, the block-bar layout, the Market, the parked Wild, shop, helpers, saves, quiet hours. Fails loudly on a regression |
+| Build Mac | `Builds/Mac/Gotchi.app`, the everyday way to run the game |
+| Build iOS (Xcode project) | `Builds/iOS/`; open `Unity-iPhone.xcodeproj`, pick a team under Signing, run on the phone |
 
-Every item also runs headless, e.g.
-`Unity -batchmode -nographics -quit -projectPath . -executeMethod Gotchi.EditorTools.GotchiEditorTools.RunLogicSmokeTest`
+```sh
+UNITY=/Applications/Unity/Hub/Editor/6000.6.2f1/Unity.app/Contents/MacOS/Unity
+$UNITY -batchmode -nographics -quit -projectPath "$PWD" \
+  -executeMethod Gotchi.EditorTools.GotchiEditorTools.RunLogicSmokeTest -logFile smoke.log
+grep -E "error CS|FAILED|ALL CHECKS PASSED" smoke.log
+```
 
-## Seeing the game without the Editor
+Quit the running game before a build (`pkill -f "Builds/Mac/Gotchi.app/Contents/MacOS/Gotchi"`), and if a
+batch run was killed, delete `Temp/UnityLockfile`.
 
-The player has a QA hook: `Builds/Mac/Gotchi.app/Contents/MacOS/Gotchi -screenshot /some/dir/shot`
-launches the game, captures `shot-home.png`, `shot-skills.png`, `shot-shop.png` and `shot-minigame.png`
-from its own renderer, then quits. It needs no macOS screen-recording permission, so it works from
-scripts and CI.
+## Player flags (dev and QA)
 
-## Running on an iPhone
+`Builds/Mac/Gotchi.app/Contents/MacOS/Gotchi <flags>`. The player takes its own screenshots, so none of this
+needs screen-recording permission and all of it works from scripts.
 
-1. Gotchi ▸ Build iOS (Xcode project) → `Builds/iOS/Unity-iPhone.xcodeproj`.
-2. Open it in Xcode, select the **Unity-iPhone** target → Signing & Capabilities → pick your team.
-3. Plug in the iPhone, select it as the run destination, press Run. The bundle id is `com.gotchi.pet`
-   (change it in Gotchi ▸ Configure Player Settings if you own a different one).
+| Flag | What it does |
+|---|---|
+| `-tempsave` | a brand-new pet that is never written to disk. **Use it for every run that spends coins or picks a style** |
+| `-hour 21.5` | pins the local hour, so the room's window can be reviewed at any time of day |
+| `-fresh` | starts at onboarding even when a save exists. Finishing the onboarding writes the new pet over the old save, so pair it with `-tempsave` unless that is wanted |
+| `-screenshot <base>` | home, shop pages, the five backgrounds, settings, leaderboard, news, story; with `-fresh`, onboarding |
+| `-screenshot-home <base>` | home-screen work: two home frames, the info boxes, the wallet, the room at four hours |
+| `-screenshot-battle <base>` | poking the cat until it leaves, every Battle Club and Market page, a ranked battle that plays itself through to the results, home with the health and mana it left, the Treat, REST and FEED, the rating board |
+| `-lab <dir>` | the creature lab: the character, the face sheet and animation strips as PNGs |
 
-## Look & feel
+Player log: `~/Library/Logs/Gotchi/Gotchi/Player.log`. Grep it for `Exception` after a capture run.
 
-**Rendering.** The UI renders natively at any resolution with anti-aliased procedural shapes. The character
-is not a sprite at all: `Creature/CreatureBody` is a custom `MaskableGraphic` that rebuilds a feather-edged
-vector mesh every frame (see `03-art-direction.md`, "Living jelly character").
+## Code map (`Assets/Scripts/Gotchi/`)
 
-The UI is fully code-drawn (`UIFactory`), no image assets: rounded cards with soft shadows, a cream/peach
-palette with pastel accents, Fredoka (headings) and Varela Round (body); Pixelify Sans kept as a fallback — all SIL Open Font License,
-licenses in `Assets/Resources/Fonts/`. Controls are icon-only, drawn procedurally from circles and rounded
-rects (`UIFactory.CreateIcon`: cookie, bubbles, moon, ball, sparkle, bag, heart, coin).
+| Folder | What lives there |
+|---|---|
+| `Core/` | `GameBootstrap` (boot, wiring, autosave, dev flags, capture routines), `GameContext` (the systems a screen can reach), `GameClock`, `GameFeatures` (switches for parked features), `GameSettings`, `SimpleTween`, `CreatureLab` |
+| `Data/` | `PetSaveData` with `BattleSave`, `CampSave`, `CampaignSave`; `Enums`; `EmotionCatalog` (the 45 named faces); `NewsItem` |
+| `Systems/` | **`BattleSystem`** (rules, catalogue, vitals, leaning, ladder, quests, trades), **`CampSystem`** (REST, FOCUS, FEED, GROOM, the Treat), `CampaignSystem` (the parked Wild), `AutomationSystem` (helpers), `LevelSystem` + `StoryBook`, `SkillTreeSystem` (battle XP and evolution stage), `BoostSystem`, `Leaderboards`, `NewsService`, `NotificationScheduler` |
+| `Economy/` | `CurrencyWallet`, `ShopCatalog`, `ShopService`, `IPurchaseService` with the mock and the StoreKit seam |
+| `Persistence/` | `ISaveService` (local JSON, Supabase stub), `IAuthService` (mock) |
+| `MiniGames/` | `BattleMiniGame` (the fight on screen), `MiniGameStage` (staging and movement), `IMiniGame` (context, result, registry). The battle is the only game |
+| `Creature3D/` | `Cat3DView` (the 3D cat: stage, clips, face, touch), `CatCoat` |
+| `Creature/` | `VectorMesh` (anti-aliased vector drawing, used by the block bars), `Expressions`; the rest is the 2D animal rig, which the first release does not show |
+| `UI/` | `UIFactory` (tokens and every component helper), `HUDController` (the home screen), `RoomView` (room and status block), `PetPortraitView`, `SegmentedBar`, `CampCellView`, `InfoTooltip`, `DialogBoxView`, `PagedPanel` + `PanelRows`, `TabBarView`, `PagedScroll`, the panels (`BattleClubPanelView`, `MarketPanelView`, `CampaignPanelView`, `ShopPanelView`, `LeaderboardPanelView`, `SettingsPanelView`, `StoryPanelView`, `NewsPanelView`), `MiniGameOverlayView`, `OnboardingView`, `RoomScenes` + `ScenePainter` |
 
-Home layout: header = currency pills + round Skills/Shop buttons; the middle is a cozy procedural room
-(`RoomView`: floor, window with sun and a drifting cloud, swaying plant, rug) with the creature front and
-centre, a speech bubble showing its mood, a tappable Journey card (evolution stage, leading branch,
-login streak → opens Skills) and a status bar with a "wish" chip that names the lowest need and performs
-that care action when tapped; a compact icon meter strip; and a bottom dock of four round
-care buttons that show a cooldown badge. The creature (`PetPortraitView` → `Creature/CreatureBody`) is a soft-body
-vector mesh — squircle marshmallow silhouette on 48 radial springs, warped features, glossy eyes with
-morphing lids, per-species ears/tail/markings — driven by `CreatureBrain` (mood posture, breathing, gaze,
-blinks, random fidgets, hop locomotion, one-shot reactions) and deformable by touch anywhere. It will be replaced by the real sprite set from
-`09-pets-and-emotions.md`, which plugs into the same view.
+Also: `Assets/Editor/` (the menu above and `CatModelImporter`), `Assets/Resources/` (the cat FBX, toon shaders,
+fonts with their OFL licences), `Tools/blender/` (the model scripts), `references/` (the painted references and
+review renders).
 
-**The Cat is 3D (2026-09-14).** `PetPortraitView` routes `SpeciesType.Cat` to `Creature3D/Cat3DView`: a Blender
-model (`Assets/Resources/Creatures/Cat3D/cat.fbx` + baked patch textures) on a private off-screen stage,
-rendered by its own camera into a render texture shown through a `RawImage` in the same pet holder, so
-overlays, bubbles and layout are untouched. Look = flat colours + inverted-hull outline
-(`Assets/Resources/Shaders/CatToon*.shader`, built-in RP, no scene lights). Animation = legacy `Animation`
-clips authored in Blender (loops Idle/Happy/Sad/Sleep/Alert/Walk/Fainted on layer 0, one-shots additive on
-layer 1); the face = feature meshes toggled by name (mouths, brows, blush, tears, hearts, dirt, accessories)
-plus eye/brow bones scaled/rotated in `LateUpdate`. Touch = ray-vs-bone-sphere hit test through the render
-texture (tap / hold / rub-to-pet / lift-and-drop). To change the model: edit `Tools/blender/build_cat.py` and run
-`/Applications/Blender.app/Contents/MacOS/Blender -b -P Tools/blender/build_cat.py -- --fbx
-Assets/Resources/Creatures/Cat3D/cat.fbx --preview /tmp/cat-preview` (Blender 5.2; brew install --cask
-blender). `Assets/Editor/CatModelImporter.cs` fixes the import settings (legacy rig, loop clips).
+How a screen is put together: `GameBootstrap` builds the systems into a `GameContext`, `HUDController` builds the
+home screen from `UIFactory` helpers and subscribes to the systems' events, and panels open over it one at a
+time. Rules never live in a view. Flows are in `11-game-flows.md`, UI rules in `12-ui-guide.md`.
+
+## The cat model
+
+- Source of truth: `Tools/blender/build_cat2.py` (Blender 5.2; `brew install --cask blender`). It exports
+  `Assets/Resources/Creatures/Cat3D/cat.fbx`; `CatModelImporter` sets the import (legacy rig, looping clips).
+
+```sh
+B=/Applications/Blender.app/Contents/MacOS/Blender
+$B -b -P Tools/blender/build_cat2.py -- --fbx "$PWD/Assets/Resources/Creatures/Cat3D/cat.fbx"
+$B -b -P Tools/blender/build_cat2.py -- --preview /tmp/gotchi-cat2           # turnaround + compare.png
+$B -b -P Tools/blender/build_cat2.py -- --anim /tmp/gotchi-anim --anim-only Happy,Idle
+```
+
+- In Unity: the model sits on a private off-screen stage, rendered by its own camera into a render texture
+  shown through a `RawImage`. Look: flat colours plus an inverted-hull outline
+  (`Assets/Resources/Shaders/CatToon*.shader`, no scene lights). Loops play on layer 0 and one-shots additively
+  on layer 1 (legacy `Animation`). The face is feature meshes toggled by name plus eye and brow bones. Colours
+  come from FBX materials named by palette key, which is how coats work. Touch is a ray against bone spheres
+  through the render texture.
+- **Live work with Claude.** Blender has the "MCP for Blender" add-on (a socket server on port 9876 that starts
+  with Blender) and Claude Code has a matching `blender` MCP server registered for this repo. `Tools/blender/live.sh`
+  rebuilds the cat into `/tmp/gotchi-cat2/cat2.blend` and opens it; pass a `.blend` path to open another file.
+  A Blender started before the add-on was installed has no server, so restart it. The script stays the source of
+  truth: what is tried live is ported back into `build_cat2.py`.
+- `Tools/blender/build_cat.py` is the retired first cat.
+
+## Gotchas
+
+- A bare Unity project lacks uGUI; the package is in the manifest, leave it there.
+- A layout group with force-expand overrides its children's preferred sizes.
+- Desktop players pause when unfocused unless Run In Background is on (capture runs depend on it).
+- Unity draws the ink outline per mesh, so any feature that can overlap itself must be one mesh.
+- `Destroy` waits for the end of the frame: deactivate a row before destroying it when a list is rebuilt, or the
+  layout still counts it (`PagedPanel.Rebuild` does this).

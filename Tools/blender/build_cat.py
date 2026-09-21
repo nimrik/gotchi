@@ -3,7 +3,9 @@
 # for Unity (legacy Animation clips, one per Blender action).
 #
 #   /Applications/Blender.app/Contents/MacOS/Blender -b -P Tools/blender/build_cat.py -- \
-#       --fbx Assets/Resources/Creatures/Cat3D/cat.fbx --preview /tmp/cat-preview
+#       --fbx Assets/Resources/Creatures/Cat3D/cat.fbx --preview /tmp/cat-preview [--blend /tmp/cat-preview/cat.blend]
+#
+# --blend saves the finished scene as a .blend so it can be opened in the Blender GUI (or by an MCP session) for inspection.
 #
 # Conventions: Blender Z up, the cat faces -Y. Every part is its own skinned object (rigid weights to one
 # bone), except the tail which blends across three bones. Objects that Unity toggles (mouths, brows, tears,
@@ -17,6 +19,7 @@ def arg(name, default=None):
     return argv[argv.index(name) + 1] if name in argv else default
 FBX_PATH = arg("--fbx")
 PREVIEW_DIR = arg("--preview")
+BLEND_PATH = arg("--blend")
 
 # ------------------------------------------------------------------ palette (reference: left cat)
 PALETTE = {
@@ -649,5 +652,11 @@ if FBX_PATH:
         bake_anim_force_startend_keying=True, bake_anim_step=1.0, bake_anim_simplify_factor=0.0,
         path_mode='STRIP', embed_textures=False)
     print("[build_cat] exported", FBX_PATH)
+
+# ------------------------------------------------------------------ save .blend (optional, for opening in the GUI)
+if BLEND_PATH:
+    os.makedirs(os.path.dirname(os.path.abspath(BLEND_PATH)), exist_ok=True)
+    bpy.ops.wm.save_as_mainfile(filepath=os.path.abspath(BLEND_PATH))
+    print("[build_cat] saved", BLEND_PATH)
 
 print("[build_cat] objects:", len(OBJECTS), "actions:", [a.name for a in bpy.data.actions])

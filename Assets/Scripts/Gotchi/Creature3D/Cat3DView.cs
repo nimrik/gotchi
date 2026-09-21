@@ -10,7 +10,7 @@ namespace Gotchi.Creature3D
 {
     // The 3D cat as a UI element. A private off-screen stage (model + camera → render texture) is shown through
     // a RawImage inside the pet holder, so the rest of the UI (overlays, bubbles, layout) is untouched.
-    // Drives the legacy animation clips authored in Blender (Tools/blender/build_cat.py), the face (feature
+    // Drives the legacy animation clips authored in Blender (Tools/blender/build_cat2.py), the face (feature
     // meshes toggled by name + eye/brow bones), touch (tap / hold / rub / pick-up-and-drop), wandering and a
     // mood-tinted contact shadow. Mirrors the CreatureBody/CreatureBrain surface PetPortraitView relies on.
     public class Cat3DView
@@ -20,7 +20,8 @@ namespace Gotchi.Creature3D
         private const float VisibleHeight = 5.6f;      // world units seen vertically by the stage camera (room for lifts/hops)
         private const float CamDistance = 10.8f, CamFov = 29.1f, CamHeight = 3.0f, LookHeight = 2.2f;
         private const float MaxLift = 1.4f;            // how high a pick-up can raise the cat before it leaves the frame
-        private const float FaintOffsetX = -0.95f;     // the Fainted clip lies the cat to one side; slide back to centre
+        private const float BackViewYaw = 146f;        // seen from behind: turned away from the camera, a quarter toward the rival
+        private const float FaintOffsetX = 0f;         // the Fainted clip re-centres the lying cat itself (Root x = -1.6); the old model needed -0.95 here
         private const float GroundOffset = 0.62f;      // ground line sits Size*0.62 below the anchor (matches CreatureBody)
         private const float HalfWidth = 1.2f;          // walkable range in world units
         private const float Aspect = 1.5f;             // render texture width / height (room to walk without clipping)
@@ -29,21 +30,28 @@ namespace Gotchi.Creature3D
         private static readonly string[] HiddenByDefault =
         {
             "MouthFrown", "MouthOpen", "MouthTongue", "BrowL", "BrowR", "BlushL", "BlushR", "HappyL", "HappyR", "ShutL", "ShutR",
-            "Tear", "Sweat", "Drool", "HeartL", "HeartR", "HeartTip", "DirtL", "DirtR", "Dirt3",
+            "Tear", "Sweat", "Drool", "Heart", "DirtL", "DirtR", "Dirt3",
         };
+        // Colours from the painted reference (03-art-direction.md, "The cat, second take"); keys are the FBX material names.
         private static readonly Dictionary<string, Color> Palette = new Dictionary<string, Color>
         {
-            { "Fur", new Color(0.235f, 0.165f, 0.150f) }, { "White", new Color(1.0f, 0.965f, 0.915f) },
-            { "EarPink", new Color(0.960f, 0.600f, 0.690f) }, { "Eye", new Color(0.965f, 0.700f, 0.190f) },
-            { "Pupil", new Color(0.110f, 0.085f, 0.085f) }, { "Glint", Color.white }, { "Nose", new Color(0.985f, 0.900f, 0.880f) }, { "Whisker", new Color(0.930f, 0.880f, 0.800f) },
-            { "Ink", new Color(0.150f, 0.105f, 0.105f) }, { "Tongue", new Color(0.930f, 0.480f, 0.560f) },
-            { "Blush", new Color(0.970f, 0.640f, 0.700f) }, { "Tear", new Color(0.480f, 0.760f, 0.940f) },
-            { "HeartRed", new Color(0.930f, 0.330f, 0.420f) }, { "Dirt", new Color(0.520f, 0.400f, 0.290f) },
-            { "Beanie", new Color(0.960f, 0.620f, 0.700f) }, { "Pom", new Color(1.0f, 0.965f, 0.915f) },
-            { "Scarf", new Color(0.560f, 0.820f, 0.780f) }, { "Bow", new Color(0.910f, 0.330f, 0.380f) },
-            { "Crown", new Color(0.970f, 0.780f, 0.280f) },
+            { "Fur", new Color(0.369f, 0.255f, 0.259f) }, { "FurMark", new Color(0.337f, 0.227f, 0.235f) }, { "Stripe", new Color(0.290f, 0.192f, 0.200f) },
+            { "White", new Color(0.992f, 0.945f, 0.875f) }, { "FaceWhite", new Color(0.992f, 0.945f, 0.875f) }, { "Pom", new Color(0.992f, 0.945f, 0.875f) },
+            { "EarPink", new Color(0.988f, 0.522f, 0.678f) }, { "EarPinkDeep", new Color(0.957f, 0.404f, 0.612f) }, { "EarTip", new Color(0.553f, 0.435f, 0.451f) },
+            { "Eye", new Color(0.984f, 0.769f, 0.216f) }, { "Pupil", new Color(0.290f, 0.110f, 0.145f) }, { "Glint", Color.white },
+            { "Nose", new Color(0.278f, 0.063f, 0.165f) }, { "Ink", new Color(0.278f, 0.063f, 0.165f) },
+            { "Whisker", new Color(0.851f, 0.796f, 0.753f) }, { "Pad", new Color(0.812f, 0.776f, 0.753f) },
+            { "Tongue", new Color(0.929f, 0.478f, 0.561f) }, { "Blush", new Color(0.969f, 0.639f, 0.702f) }, { "Tear", new Color(0.478f, 0.761f, 0.941f) },
+            { "HeartRed", new Color(0.929f, 0.329f, 0.420f) }, { "Dirt", new Color(0.522f, 0.400f, 0.290f) },
+            { "Beanie", new Color(0.961f, 0.620f, 0.702f) }, { "Scarf", new Color(0.561f, 0.820f, 0.780f) },
+            { "Bow", new Color(0.910f, 0.329f, 0.380f) }, { "Crown", new Color(0.969f, 0.780f, 0.278f) },
         };
-        private static readonly HashSet<string> NoOutline = new HashSet<string> { "Pupil", "Glint", "Ink", "Blush", "Tear", "Nose", "Whisker" };
+        // Parts drawn without the inverted-hull outline: small features, painted patches and the white face mark.
+        private static readonly HashSet<string> NoOutline = new HashSet<string>
+        {
+            "Pupil", "Glint", "Ink", "Blush", "Tear", "Nose", "Whisker", "Eye", "EarPink", "EarPinkDeep", "EarTip", "FurMark", "Stripe", "Pad", "FaceWhite", "Dirt", "Tongue",
+        };
+        private static readonly Color OutlineInk = new Color(0.278f, 0.063f, 0.165f);
         private static readonly Dictionary<string, Material> SharedMaterials = new Dictionary<string, Material>();
         private static int _stageCount;
 
@@ -52,9 +60,15 @@ namespace Gotchi.Creature3D
         public bool Fainted { get; private set; }
         public bool Touching => _pressed;
         public bool Grounded => _slideY <= 0.001f && !_pressed;
+        // Dirty and Hungry show the model's dirt marks and drool. Nothing sets them since the needs were removed
+        // (2026-09-21); they stay so ApplyFace keeps those meshes hidden, and for whatever wants them later.
         public bool Sleeping, Dirty, Hungry;
         public float Facing = 1f;
-        public Color Mood = Color.white;
+        // Battle view: the cat is seen from behind, three-quarters, looking away toward `Facing` (the rival up the field).
+        public bool BackView;
+        // Battle view: whatever the mood says, the mouth stays shut.
+        public bool KeepMouthClosed;
+        public Color Mood = new Color(0.30f, 0.25f, 0.30f);   // no moods any more: the contact shadow keeps its neutral grey
         public event Action<PetPart> Tapped;
         public event Action<PetPart> Held;
         public event Action Petted;
@@ -90,14 +104,14 @@ namespace Gotchi.Creature3D
         private Vector2 _pressLocal, _lastLocal;
         private Action _onArrive;
         private float _walkTarget, _walkSpeed;
-        private bool _walking;
+        private bool _walking, _marching;
         private float _idleTimer = 25f;
         private bool _allowWander;
         private Color _shadowColor;
 
         public bool AllowWander { get => _allowWander; set => _allowWander = value; }
 
-        public Cat3DView(Transform parent, MonoBehaviour host, float size)
+        public Cat3DView(Transform parent, MonoBehaviour host, float size, CatCoat coat = null)
         {
             _host = host;
             Size = size;
@@ -145,7 +159,7 @@ namespace Gotchi.Creature3D
                 for (int i = 0; i < mats.Length; i++)
                 {
                     string matName = mats[i] != null ? mats[i].name.Replace(" (Instance)", "") : "";
-                    mats[i] = r.gameObject.name == "Shadow" ? _shadowMat : MaterialFor(matName, r.gameObject.name, mats[i]);
+                    mats[i] = r.gameObject.name == "Shadow" ? _shadowMat : MaterialFor(matName, r.gameObject.name, mats[i], coat);
                 }
                 r.sharedMaterials = mats;
             }
@@ -163,13 +177,13 @@ namespace Gotchi.Creature3D
             if (_browR != null) { _browRestR = _browR.localRotation; _browRestPosR = _browR.localPosition; }
 
             // Hit spheres for touch, centred relative to each bone's rest position so they follow the animation.
-            AddHit(PetPart.Head, headBone, 0.64f, 1.15f);
-            AddHit(PetPart.Body, FindDeep(model.transform, "Body"), 0.34f, 0.66f);
-            AddHit(PetPart.Paws, FindDeep(model.transform, "ArmL"), -0.30f, 0.36f);
-            AddHit(PetPart.Paws, FindDeep(model.transform, "ArmR"), -0.30f, 0.36f);
-            AddHit(PetPart.Paws, FindDeep(model.transform, "LegL"), -0.22f, 0.30f);
-            AddHit(PetPart.Paws, FindDeep(model.transform, "LegR"), -0.22f, 0.30f);
-            AddHit(PetPart.Tail, FindDeep(model.transform, "Tail2"), 0.05f, 0.45f);
+            AddHit(PetPart.Head, headBone, 0.62f, 1.05f);
+            AddHit(PetPart.Body, FindDeep(model.transform, "Body"), 0.78f, 0.78f);   // Body bone sits at the ground
+            AddHit(PetPart.Paws, FindDeep(model.transform, "ArmL"), -0.40f, 0.45f);
+            AddHit(PetPart.Paws, FindDeep(model.transform, "ArmR"), -0.40f, 0.45f);
+            AddHit(PetPart.Paws, FindDeep(model.transform, "LegL"), -0.16f, 0.30f);
+            AddHit(PetPart.Paws, FindDeep(model.transform, "LegR"), -0.16f, 0.30f);
+            AddHit(PetPart.Tail, FindDeep(model.transform, "Tail2"), 0.05f, 0.42f);
 
             // ---- animation (legacy): loops on layer 0, one-shots additive on layer 1
             _anim = model.GetComponent<Animation>() ?? model.GetComponentInChildren<Animation>();
@@ -228,44 +242,63 @@ namespace Gotchi.Creature3D
 
         // ---- materials ----
 
-        private static Material MaterialFor(string matName, string objectName, Material imported)
+        private static Material MaterialFor(string matName, string objectName, Material imported, CatCoat coat)
         {
-            string key = matName;
-            if (string.IsNullOrEmpty(key) || (!Palette.ContainsKey(key) && key != "HeadFur" && key != "BodyFur"))
-                key = GuessMaterial(objectName, matName);
-            if (SharedMaterials.TryGetValue(key, out var cached)) return cached;
+            string key = NormalizeMaterialName(matName);
+            if (string.IsNullOrEmpty(key) || !Palette.ContainsKey(key)) key = GuessMaterial(objectName);
+            // Materials are shared between cats of the same coat; a coat only re-colours the keys it names.
+            bool recoloured = coat != null && coat.Colors.ContainsKey(key);
+            string cacheKey = recoloured ? coat.Id + "/" + key : key;
+            if (SharedMaterials.TryGetValue(cacheKey, out var cached) && cached != null) return cached;
             bool outline = !NoOutline.Contains(key);
             var mat = new Material(Shader.Find(outline ? "Gotchi/CatToon" : "Gotchi/CatToonNoOutline")) { name = key };
-            if (key == "HeadFur" || key == "BodyFur")
-            {
-                mat.mainTexture = Resources.Load<Texture2D>(key == "HeadFur" ? "Creatures/Cat3D/cat_head" : "Creatures/Cat3D/cat_body");
-                mat.color = Color.white;
-            }
+            if (recoloured) mat.color = coat.Colors[key];
             else if (Palette.TryGetValue(key, out var c)) mat.color = c;
             else if (imported != null && imported.HasProperty("_Color")) mat.color = imported.color;
-            if (outline) { mat.SetFloat("_ShadeStrength", 0.10f); mat.SetFloat("_OutlineWidth", 0.06f); mat.SetColor("_OutlineColor", new Color(0.22f, 0.11f, 0.15f)); }
+            if (outline) { mat.SetFloat("_ShadeStrength", 0.10f); mat.SetFloat("_OutlineWidth", key == "Fur" ? 0.085f : 0.06f); mat.SetColor("_OutlineColor", OutlineInk); }
             if (key == "White" || key == "Pom" || key == "Glint") mat.SetFloat("_ShadeStrength", 0.07f);
-            SharedMaterials[key] = mat;
+            SharedMaterials[cacheKey] = mat;
             return mat;
         }
 
-        private static string GuessMaterial(string objectName, string matName)
+        // "Fur.001" (FBX duplicate suffix) -> "Fur"; imported material instances lose their " (Instance)" tag.
+        private static string NormalizeMaterialName(string name)
         {
-            if (objectName == "Head") return "HeadFur";
-            if (objectName == "Body") return "BodyFur";
+            if (string.IsNullOrEmpty(name)) return "";
+            name = name.Replace(" (Instance)", "");
+            int dot = name.IndexOf('.');
+            return dot > 0 ? name.Substring(0, dot) : name;
+        }
+
+        // Fallback when an FBX material name is not a palette key: pick the palette key from the object name.
+        private static string GuessMaterial(string objectName)
+        {
+            if (objectName == "FaceWhite") return "FaceWhite";
+            if (objectName.StartsWith("EyeRim")) return "Ink";
             if (objectName.StartsWith("EarInner")) return "EarPink";
+            if (objectName.StartsWith("EarSpot")) return "EarPinkDeep";
+            if (objectName.StartsWith("EarTip")) return "EarTip";
             if (objectName.StartsWith("Eye")) return "Eye";
             if (objectName.StartsWith("Pupil")) return "Pupil";
             if (objectName.StartsWith("Glint")) return "Glint";
-            if (objectName.StartsWith("Foot") || objectName == "ArmL") return "White";
+            if (objectName.StartsWith("Foot") || objectName.StartsWith("Paw") || objectName == "ChestBib") return "White";
+            if (objectName.StartsWith("Pad")) return "Pad";
+            if (objectName.StartsWith("BackStripe")) return "Stripe";
+            if (objectName.StartsWith("CrownMark")) return "FurMark";
             if (objectName.StartsWith("Blush")) return "Blush";
             if (objectName == "Tear" || objectName == "Sweat" || objectName == "Drool") return "Tear";
             if (objectName.StartsWith("Heart")) return "HeartRed";
             if (objectName.StartsWith("Dirt")) return "Dirt";
             if (objectName.StartsWith("Whisker")) return "Whisker";
+            if (objectName == "MouthTongue") return "Tongue";
             if (objectName.StartsWith("Mouth") || objectName.StartsWith("Brow") || objectName.StartsWith("Happy") || objectName.StartsWith("Shut")) return "Ink";
             if (objectName == "Nose") return "Nose";
-            return string.IsNullOrEmpty(matName) ? "Fur" : matName;
+            if (objectName == "Acc_hat_beanie_pom") return "Pom";
+            if (objectName.StartsWith("Acc_hat")) return "Beanie";
+            if (objectName.StartsWith("Acc_scarf")) return "Scarf";
+            if (objectName.StartsWith("Acc_bow")) return "Bow";
+            if (objectName.StartsWith("Acc_crown")) return "Crown";
+            return "Fur";
         }
 
         // ---- helpers ----
@@ -326,8 +359,28 @@ namespace Gotchi.Creature3D
 
         public void SetLoop(LoopClip loop)
         {
-            if (Fainted) return;
+            if (Fainted || _marching) return;   // a march keeps its Walk loop; StopWalkInPlace picks the mood loop up again
             CrossFadeLoop(loop.ToString());
+        }
+
+        // Walks on the spot while the caller slides the UI element: the cat leaving the screen in a huff and coming back.
+        public void StartWalkInPlace(float facing, float animSpeed = 1f)
+        {
+            if (Fainted) return;
+            _walking = false; _onArrive = null;
+            _marching = true;
+            Facing = facing < 0f ? -1f : 1f;
+            if (_clips.TryGetValue("Walk", out var walk)) walk.speed = animSpeed;
+            CrossFadeLoop("Walk");
+        }
+
+        public void StopWalkInPlace()
+        {
+            if (!_marching) return;
+            _marching = false;
+            Facing = 1f;
+            if (_clips.TryGetValue("Walk", out var walk)) walk.speed = 1f;
+            if (!Fainted) CrossFadeLoop(Sleeping ? "Sleep" : _face.Loop.ToString());
         }
 
         private void CrossFadeLoop(string name)
@@ -343,9 +396,9 @@ namespace Gotchi.Creature3D
             if (Fainted && clip != OneShot.Faint) return;
             switch (clip)
             {
-                case OneShot.Faint: Fainted = true; CrossFadeLoop("Fainted"); return;
+                case OneShot.Faint: Fainted = true; ApplyFace(); CrossFadeLoop("Fainted"); return;
                 case OneShot.WaveL: case OneShot.WaveR:
-                    PlayClip(direction < 0f ? "WaveL" : "WaveR"); return;
+                    PlayClip(direction < 0f ? "WaveR" : "WaveL"); return;      // ArmR is the paw on the viewer's left
                 case OneShot.Attack: _yaw.Kick(direction * -60f); PlayClip("Attack"); return;
                 case OneShot.Hurt: _yaw.Kick(direction * 40f); PlayClip("Hurt"); return;
                 default: PlayClip(clip.ToString()); return;
@@ -362,12 +415,14 @@ namespace Gotchi.Creature3D
                 if (!_clips.TryGetValue(alt, out st)) return;
             }
             if (name == "Yawn") ShowMouthOpenFor(0.8f);
+            if (name == "Pat") { _happyEyesUntil = Time.time + 0.9f; ApplyFace(); }   // the only moment the eyes close into happy arcs
             _anim.Stop(st.name);
             st.time = 0f;
             _anim.Play(st.name, PlayMode.StopSameLayer);
         }
 
         private float _mouthOpenUntil;
+        private float _happyEyesUntil;
         private void ShowMouthOpenFor(float seconds) => _mouthOpenUntil = Time.time + seconds;
 
         // Waves the paw that was last touched.
@@ -376,10 +431,22 @@ namespace Gotchi.Creature3D
         public void Revive()
         {
             Fainted = false;
+            ApplyFace();
             CrossFadeLoop("Idle");
         }
 
         public void SetSleeping(bool sleeping) { Sleeping = sleeping; ApplyFace(); }
+
+        // Battle staging: which way the cat looks, from which side it is seen, and no turning animation to get there.
+        public void Stage(float facing, bool backView, bool keepMouthClosed)
+        {
+            Facing = facing < 0f ? -1f : 1f;
+            BackView = backView;
+            KeepMouthClosed = keepMouthClosed;
+            _yaw.Snap(-Facing * (BackView ? BackViewYaw : 32f));
+            _turn.localRotation = Quaternion.Euler(0f, _yaw.Value, 0f);
+            ApplyFace();
+        }
 
         public void WalkTo(float targetX, float speed = 1.2f, Action onArrive = null)
         {
@@ -400,12 +467,6 @@ namespace Gotchi.Creature3D
                 if (kv.Key.StartsWith("Acc_")) kv.Value.SetActive(!string.IsNullOrEmpty(id) && kv.Key.StartsWith("Acc_" + id));
         }
 
-        public void SetConditions(bool dirty, bool hungry)
-        {
-            Dirty = dirty; Hungry = hungry;
-            ApplyFace();
-        }
-
         public void EnableTouch() => _image.raycastTarget = true;
 
         // ---- face ----
@@ -413,28 +474,34 @@ namespace Gotchi.Creature3D
         private void ApplyFace()
         {
             var f = _face;
-            bool happyEyes = f.Squint > 0.5f && !Sleeping;
-            bool shut = Sleeping || (!happyEyes && f.EyeOpen < 0.2f);
+            // The amber eyes are the character, so they stay open in every mood: a squint only narrows them (see
+            // LateTick). Love used to swap them for the closed happy arcs, but Love is the everyday mood of a
+            // well-kept pet, so the cat spent most of its time bouncing with its eyes shut. The arcs now show only
+            // for the moment it is being petted (the Pat clip); sleep and fainting still shut the eyes.
+            bool happyEyes = !Sleeping && Time.time < _happyEyesUntil;
+            bool shut = Sleeping || Fainted;
             bool eyesOpen = !happyEyes && !shut;
             foreach (string s in new[] { "L", "R" })
             {
                 Show("Happy" + s, happyEyes);
                 Show("Shut" + s, shut);
-                Show("Eye" + s, eyesOpen); Show("Pupil" + s, eyesOpen); Show("Glint" + s, eyesOpen);
+                Show("Eye" + s, eyesOpen); Show("EyeRim" + s, eyesOpen); Show("Pupil" + s, eyesOpen); Show("Glint" + s, eyesOpen);
                 Show("Blush" + s, f.Blush > 0.6f && !Sleeping);
                 Show("Brow" + s, f.BrowShow > 0.5f && !Sleeping);
             }
-            bool open = !Sleeping && (f.MouthOpen > 0.45f || Time.time < _mouthOpenUntil);
+            bool open = !Sleeping && !KeepMouthClosed && (f.MouthOpen > 0.45f || Time.time < _mouthOpenUntil);
             bool frown = !open && !Sleeping && f.MouthCurve < -0.1f;
             Show("MouthOpen", open); Show("MouthTongue", open);
             Show("MouthFrown", frown);
             Show("MouthSmile", !open && !frown);
             Show("Tear", f.Tear > 0.5f && !Sleeping);
             Show("Sweat", f.Sweat > 0.5f && !Sleeping);
-            Show("HeartL", f.Heart > 0.5f); Show("HeartR", f.Heart > 0.5f); Show("HeartTip", f.Heart > 0.5f);
+            Show("Heart", f.Heart > 0.5f);   // one mesh: three overlapping parts each drew their own outline, which cut across the heart
             Show("DirtL", Dirty); Show("DirtR", Dirty); Show("Dirt3", Dirty);
             Show("Drool", Hungry && !Sleeping);
-            _eyeOpen.Target = eyesOpen ? Mathf.Clamp(f.EyeOpen, 0.35f, 1f) : 1f;
+            // Moods the 2D creatures draw with shut eyes (pride, grief, remorse) only lower the lids here.
+            float lid = f.EyeOpen < 0.2f ? (f.MouthCurve > 0f ? 0.8f : 0.45f) : Mathf.Clamp(f.EyeOpen, 0.35f, 1f);
+            _eyeOpen.Target = eyesOpen ? lid * (f.Squint > 0.5f ? 0.84f : 1f) : 1f;
             _eyeScale.Target = 1f + (f.EyeScale - 1f) * 0.6f;
             _browTilt.Target = f.BrowTilt;
             _browRaise.Target = f.BrowRaise;
@@ -458,6 +525,7 @@ namespace Gotchi.Creature3D
             else { _blinkPhase += dt / 0.14f; if (_blinkPhase >= 1f) _blinkPhase = -1f; }
 
             if (_mouthOpenUntil > 0f && Time.time >= _mouthOpenUntil) { _mouthOpenUntil = 0f; ApplyFace(); }
+            if (_happyEyesUntil > 0f && Time.time >= _happyEyesUntil) { _happyEyesUntil = 0f; ApplyFace(); }
 
             // mood shadow
             var target = ShadowFor(Mood);
@@ -493,13 +561,13 @@ namespace Gotchi.Creature3D
             }
 
             // facing
-            _yaw.Target = -Facing * 32f;
+            _yaw.Target = -Facing * (BackView ? BackViewYaw : 32f);
             _yaw.Step(dt);
             _turn.localRotation = Quaternion.Euler(0f, _yaw.Value, 0f);
             _slide.localPosition = new Vector3(_slideX + (Fainted ? FaintOffsetX : 0f), _slideY, 0f);
 
             // idle wandering
-            if (_allowWander && !_walking && !_pressed && !Fainted && !Sleeping && _slideY <= 0f)
+            if (_allowWander && !_walking && !_marching && !_pressed && !Fainted && !Sleeping && _slideY <= 0f)
             {
                 _idleTimer -= dt;
                 if (_idleTimer <= 0f)
@@ -522,15 +590,16 @@ namespace Gotchi.Creature3D
             Vector3 eyeScale = Vector3.one + _eyeUpAxis * (open * sc - 1f) + _eyeRightAxis * (sc - 1f);
             if (_eyeL != null) _eyeL.localScale = eyeScale;
             if (_eyeR != null) _eyeR.localScale = eyeScale;
-            // brows: tilt about the viewing axis (inner ends down for positive = angry), raise along up
+            // brows: tilt about the viewing axis (inner ends down for positive = angry), raise along up.
+            // BrowL is the cat's left brow (viewer's right) on this rig, hence the mirrored signs vs. the old model.
             if (_browL != null)
             {
-                _browL.localRotation = _browRestL * Quaternion.AngleAxis(-_browTilt.Value, _browFrontAxis);
+                _browL.localRotation = _browRestL * Quaternion.AngleAxis(_browTilt.Value, _browFrontAxis);
                 _browL.localPosition = _browRestPosL + _browUpAxis * (_browRaise.Value * 0.03f);
             }
             if (_browR != null)
             {
-                _browR.localRotation = _browRestR * Quaternion.AngleAxis(_browTilt.Value, _browFrontAxis);
+                _browR.localRotation = _browRestR * Quaternion.AngleAxis(-_browTilt.Value, _browFrontAxis);
                 _browR.localPosition = _browRestPosR + _browUpAxis * (_browRaise.Value * 0.03f);
             }
         }

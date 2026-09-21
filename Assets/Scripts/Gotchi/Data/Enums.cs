@@ -1,7 +1,5 @@
 namespace Gotchi.Data
 {
-    public enum NeedType { Hunger, Hygiene, Energy, Happiness }
-
     public enum CurrencyType { Soft, Premium }
 
     public enum SpeciesType
@@ -14,6 +12,25 @@ namespace Gotchi.Data
     {
         Sport, Social, PvP, Hunter, Science, Nature, ExplorerAdventure
     }
+
+    // The game is built around battles: the Battle Club (ranked) and the Wild (campaign) both feed the PvP branch,
+    // the only one left. The Sport, Social, Science, Nature, Explorer and Hunter games were removed on 2026-09-21;
+    // their enum values stay so old saves still load. Everything the player sees iterates Active, never the enum.
+    public static class SkillBranches
+    {
+        public static readonly SkillBranch[] Active = { SkillBranch.PvP };
+
+        public static bool IsActive(SkillBranch branch)
+        {
+            foreach (var active in Active) if (active == branch) return true;
+            return false;
+        }
+    }
+
+    // Battle Club. A fighting style is the cat's battle type: CLAW beats TRICK, TRICK beats FLUFF, FLUFF beats CLAW.
+    public enum BattleStyle { Normal, Claw, Fluff, Trick }
+
+    public enum BattleStat { Hp, Attack, Defense, Speed }
 
     public enum EmotionCategory
     {

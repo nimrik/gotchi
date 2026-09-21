@@ -1,199 +1,126 @@
 # Gotchi — Art Direction
 
-Status: draft v0.1 — directional notes only; needs a dedicated reference-gathering pass before locking.
+Status: v0.3 (2026-09-21). The cat and the home screen are in the build. UI rules are in `12-ui-guide.md`.
 
-## Reference point
+## The look in one paragraph
 
-Celeste-inspired pixel art for the world/UI, combined with a **3D creature** as the pet itself — a
-2D-environment + 3D-character hybrid (comparable in spirit to Paper Mario or Octopath Traveler's
-"2D-HD" look, though the target mood is cute/kawaii rather than those games' tone).
+A **3D chibi cat** with flat colours and one thick wine-coloured ink outline stands in a **calm painted room**
+(a wall, a floor, one window whose sky follows the time of day), framed by a **handheld-RPG box UI**: dark
+outlined boxes, a pixel typeface for labels and numbers, a round typeface for body copy. The cat is the only
+thing on screen with depth and motion of its own, so the eye goes to it. Nothing is pixelated on purpose except
+the typeface; shapes are anti-aliased at any resolution.
 
-## Key technical note (important for crispness)
+## The cat
 
-Celeste's pixel art reads as crisp because it's rendered at a fixed low internal resolution and then
-scaled up with nearest-neighbor filtering — not because the source art uses giant literal pixels.
-On modern Retina iPhone screens, replicating "1 pixel ≈ 1mm" literally would look chunky/jagged rather
-than crisp. Recommendation: lock an internal render resolution (e.g. 320×180 or similar) for the 2D
-world/UI layer, and treat the "big pixel" look as a deliberate scale choice validated by prototyping,
-not a literal 1:1 pixel-to-millimeter target.
+Rebuilt from scratch on 2026-09-21 from one painted reference, the tuxedo cat in
+`references/creature-character/cat/reference-tuxedo-cat-fish-pair.png` (left cat, the fish is ignored), with the
+body-part layout of the chibi turnaround sheet `references/creature-character/cat/reference-turnaround-sheet.png`.
+A standing chibi cat: a wide elliptic head straight on a short rounded torso, no neck or shoulders, ears on the
+top corners, short arms hanging at the sides, two feet, a tail curling out to the side.
 
-## Creature rendering
+**Palette** (sampled from the painting): fur `#5e4142` (shadow `#4d3435`), whites `#fdf1df` (shadow `#e6dbd0`),
+ear pink `#fc85ad` with a lighter core `#fd9dbb`, eyes `#fbc437`, pupils `#4a1c25`, toe pads `#cfc6c0`,
+whiskers `#d9cbc0`, outline deep wine `#47102a` (never black).
 
-- Base creature: 3D model, likely low-poly or stylized with pixelated/dithered shading to sit visually
-  with the 2D world.
-- Some mini-games render the character as 2D (matches world), others as full 3D (multiplayer arena style,
-  Brawl Stars-comparison) — needs a clear rule for *when* each mode is used, so it doesn't feel arbitrary.
+**Rules the model follows**
 
-## Creature portrait style guide (draft v0.1)
+- **Outline.** One thick stroke, about 2.5% of the head width, on the silhouette, wherever parts overlap, around
+  each eye and around the pink of the ear. None on whiskers, blaze or pads. The silhouette stroke is heavier
+  than internal lines (0.085 against 0.055 in head-radius units).
+- **Shading.** Flat colour plus one soft shadow tone on downward-facing surfaces: soft on the whites, almost
+  none on the fur. No highlights.
+- **Proportions.** The head is about 55% of the ear-less height and wider than the body. Big wide-based ears
+  splayed about 27°, the pink face covering about three quarters of the ear and turned about 35° forward.
+- **Eyes.** Huge amber ovals, slightly taller than wide (0.60 × 0.66 head-radius units), a small nub aiming about
+  18° down at the nose, a thin wine rim, thin vertical pill pupils (about 65% of the eye height) sitting toward
+  the nose. They are shallow domes laid onto the curved head, so nothing reads as a plate from the side. The
+  slant in the painting is a head roll, a pose, and not the eye.
+- **Face mark.** ONE piece: a white triangle (tip at the eyes' upper third) whose sides flow through smooth
+  fillets into two plump lobes that merge at the bottom, with one continuous outline. Built flush on the head
+  as a painted region, the lobes as gentle domes, a thin dark nose wedge as the only relief. Three short thick
+  whisker strokes low on each cheek.
+- **Markings.** White blaze and muzzle; the whole chest and belly white up to the armpits; white paw ends on
+  dark arms; white feet with grey soles; three soft darker stripes across the upper back.
+- **Ears.** Thin dark leaves with sharp tips. The pink is the ear's own outline inset by a thin band, with a dark
+  fur band along the inner edge, a deeper pink spot low down and a small grey-mauve tip cap.
+- **No invented markings.** What is not in the reference does not go on the model.
 
-Extracted from the reference images in `references/creature-character/` — specifically the consistent
-cluster (plain sitting panda, red panda, both bunnies), not the two outliers in that folder (a ninja panda
-with a sword, and a photo-realistic "scared panda in a cage" meme) which are a different rendering style
-entirely and are excluded from this pattern unless confirmed otherwise. This style is aimed at the
-45-sub-emotion × 13-species portrait art from `09-pets-and-emotions.md`, not necessarily the explorable
-world (still open, see below).
+**One mesh per feature.** Unity draws the ink outline per mesh (an inverted hull), so a shape assembled from
+parts shows each part's outline through its neighbours. Every feature that can overlap itself is a single mesh.
+The floating heart was two lobes and a tip and came out with a dark cut across it; it is now one pillow swept
+from the heart curve, with its cleft and tip slightly rounded so the hull cannot fold over itself.
 
-| Element | Rule |
-|---|---|
-| Canvas | Square, clean pixel grid (~128×128 effective resolution), no blur/smoothing |
-| Proportions | Chibi/super-deformed — oversized rounded head, small simplified seated body, minimal limb detail |
-| Pose | Seated, three-quarter idle "loaf" pose, facing slightly left — universal base pose every species/emotion variant builds from |
-| Outline | Uniform ~2px near-black outline around the whole silhouette |
-| Shading | Flat cel-shading — exactly 2 tone values per surface (base + one shadow), no gradients, no dithering, one small highlight fleck on eyes/nose only |
-| Eyes | Large, round, dark pupils with a white sparkle catchlight in the same corner every time |
-| Cheeks | Soft pink blush marks on both cheeks — same pink across every species regardless of fur color |
-| Palette | Max 6 flat colors per character (fur base, fur shadow, outline, eye, blush pink, one species accent) |
-| Background | Flat/transparent, no props, no decorative sparkles or text baked into the art |
+**Coats.** The player's cat is always the painted cocoa cat. Other keepers' cats and wild cats are the same
+model in another coat (`Creature3D/CatCoat`: ginger, smoke, night, cream, tabby, ash, rust, shadow), which
+re-colours the palette keys. The model carries no textures: every colour is a plain FBX material named by
+palette key.
 
-The blush-pink and sparkle-catchlight rules are deliberately kept constant across every species — that's
-the intended "Gotchi signature," so the roster reads as one brand rather than a reused generic asset pack
-(some reference images carry visible third-party watermarks — "Shoebox Games," "SCicek" — treat those as
-inspiration only, never reused/traced directly).
+## Animation
 
-### Nano Banana (Gemini 2.5 Flash Image) prompt templates
+27 clips authored in Blender: 7 loops (Idle, Happy, Sad, Sleep, Alert, Walk, Fainted) and 20 one-shots. Rules:
 
-**1. Establish the style — run once, no reference image, on the first species:**
-```
-A single {SPECIES} rendered as chunky kawaii pixel art, chibi proportions with an
-oversized rounded head and a small simplified seated body, drawn on a clean 128x128
-pixel grid with soft anti-aliased edges (no dithering, no gradients). Flat cel-shading
-with exactly two tone values per color area plus a single small highlight fleck on the
-eyes and nose. Uniform 2px near-black outline around the entire silhouette. Large round
-dark eyes with one white sparkle catchlight in the upper-left of each pupil. Soft pink
-blush marks on both cheeks. Seated three-quarter idle pose, facing slightly left,
-centered in frame. Maximum 6 flat colors total. Solid transparent background, no props,
-no decorative elements, no text, no watermark. Clean, polished, mobile-game icon
-quality — not a rough sketch.
-```
+- The Body bone's squash and stretch is the main tool (bones inherit scale, so squashing the body squashes the
+  whole cat). The head is about 45% of the silhouette and leads every action: it anticipates down and
+  overshoots up. Ears and tail are the big thin shapes and swing 20 to 50°. Arms and legs are stubs that ride
+  the body and only swing wide when the pose must read (waves, celebrate, stretch, groom).
+- One-shots are additive in Unity, so they never key frame 0 and always return to rest.
+- Naming: every "L" part sits at +X, the cat's own left. A world-Y roll moves an up-pointing part and a
+  down-hanging part in opposite directions, so EarL splays outward with a positive Y and ArmL with a negative Y.
+- **The amber eyes stay open.** A happy squint only narrows them. The closed happy arcs show for under a second
+  while the cat is being petted; shut lines are for sleep and fainting. The everyday Happy loop is a planted
+  bounce (feet on the floor); jumps belong to the Hop and Celebrate one-shots, which answer an event.
+- **In battle** our cat is seen from behind with its mouth shut (`Cat3DView.Stage`), so every battle clip has to
+  read from the back. Six battle clips are required and not authored yet: defensive, attacking, screaming,
+  healing, defeated, lightly wounded. Brief in `13-pvp-design.md`, section 7.
+- **Faces.** The model has toggleable face meshes (happy arcs, shut lines, smile, frown, open mouth, brows,
+  blush, tear, sweat, heart) and the code names 45 faces built from them (`09-pets-and-emotions.md`). Nothing
+  picks a face from the cat's state any more; they are the vocabulary for reactions and cutscenes.
 
-**2. New species, same style — attach the locked reference image from step 1:**
-```
-Using the exact same art style, proportions, outline weight, shading rules, eye design,
-and color palette structure as the attached reference image, create a new character: a
-{SPECIES} in the same seated three-quarter idle pose. Keep species-accurate features
-(ears, markings, fur pattern) but do not copy the reference creature's specific design —
-only match its rendering style. Solid transparent background, no props, no text, no
-watermark.
-```
+## Pipeline
 
-**3. Emotion variant of an existing species — attach that species' locked base image:**
-```
-Using the exact same art style, proportions, outline, and palette as the attached
-reference image of this {SPECIES}, create a new pose/expression showing {EMOTION}:
-{one-line description of how it reads on this face/body}. Keep the same seated base
-pose, same colors, same proportions — change only the facial expression and minor body
-language needed to convey the emotion. Solid transparent background, no props, no text,
-no watermark.
-```
+- `Tools/blender/build_cat2.py` (Blender 5.2, Eevee flat emission, inverted-hull outline) builds the model,
+  rigs it, adds the face meshes, the four shop accessories and the ground shadow, authors the clips and exports
+  `Assets/Resources/Creatures/Cat3D/cat.fbx`. `Assets/Editor/CatModelImporter.cs` fixes the import settings.
+- `--preview <dir>` renders turnaround views and a `compare.png` sheet next to the painted reference.
+  `--anim <dir>` renders six frames of every clip (`--anim-only Happy,Idle` for some). Current strips are in
+  `references/creature-character/cat/3d-take2/animation/`.
+- Review every model change against **zoomed details of the reference**, from the front, the side and the back,
+  before exporting. `Gotchi -lab <dir>` renders the in-game result.
+- Live work with Claude through the Blender MCP add-on is described in `10-unity-setup.md`.
 
-Nano Banana is generative, not a strict pixel-grid tool, so outputs may drift slightly off-grid — treat
-its output as the design-lock step, then run final picks through PixelLab.ai (see Tooling below) to snap
-them to a true palette-locked pixel grid before they become production assets.
+## The room
 
-### First validation result (cat, confirmed)
-
-Tested prompt template #1 (text-only, no reference image) on two tools:
-- **AI Studio (Nano Banana / Gemini 2.5 Flash Image), text-only:** off-pattern — rendered smooth/soft
-  vector-style rather than true pixel art, no visible pixel grid, no sparkle catchlight, soft blurry
-  outline instead of a crisp uniform stroke. Nano Banana's weak point is from-scratch text-only generation.
-- **DaVinci (AI art app), text-only:** strong match to the style guide on the first try — chunky visible
-  pixel grid, consistent thick outline, flat 2-tone cel shading, sparkle catchlight, blush, tight palette,
-  transparent background. Locked as the first reference image:
-  `references/creature-character/ai-creatures/davinci_a_single_cat_rendered_as_chunky_kawaii_pixel_art__.png`
-- **Takeaway:** the prompt itself works well; DaVinci handles from-scratch text-only generation better,
-  while Nano Banana's actual strength (per its own model behavior) is consistent *editing from a reference
-  image* rather than from-scratch generation — so feed it the DaVinci result + prompt template #2/#3
-  instead of asking it to generate from text alone.
-
-### Second validation result (seal, confirmed)
-
-ChatGPT's image generation also produced a strong match on the seal prompt (template #2) — chunky pixel
-grid, consistent outline, 2-tone cel shading, sparkle catchlights, blush, transparent background:
-`references/creature-character/ai-creatures/chatgpt seal.png`. Now three tools confirmed capable of
-hitting this style: DaVinci, ChatGPT (both from-scratch/text-guided), and Nano Banana (reference-editing
-mode only, not yet tested — text-only failed per the cat test above).
-
-**Prompt refinement learned from this run:** ChatGPT returned two seals side-by-side (a comparison pair)
-instead of one isolated creature. Add "single creature only, no comparison pairs, no duplicate poses in
-frame" to future prompts so each generation is one clean, individually-usable asset.
-
-**Still open:** whether the explorable 2D world shares this exact style or a different (but complementary)
-treatment; per-species accent colors; whether the ninja-panda/scared-panda outliers represent a wanted
-alternate style (e.g. a battle-pose variant) worth folding in later.
-
-## The animal rig (decided 2026-09-14, third pass — replaces the blob)
-
-The user rejected every blob-shaped version ("scary, not cute") and, via their reference folder plus a
-"Collect cute pets" screenshot, pinned the look: **a real four-legged animal** with a big round head, small
-face on the front half of the head, dot eyes with one catchlight, pink cheeks, flat colour with **one darker
-shadow tone**, a **thin dark outline**, standing on a soft shadow disc. Smooth vector, not pixel (a pixel pass
-can be added later as a render setting). And "full-fledged animation, not crude".
-
-**Rig** (`Creature/CreatureBody`, one uGUI `MaskableGraphic` per creature, rebuilt every frame from
-`Creature/VectorMesh`): spine (hip + shoulder points), head with pitch and yaw, four two-bone legs solved by
-analytic IK (front knees bend back, hind knees forward; far legs drawn behind and in the shadow tone), tail
-chain of three joints, ears, all as `Spring`s. Body plans: `Quadruped` (11 species), `Upright` (penguin),
-`Flat` (seal). Species = data in `Creature/CreatureLook` (palette, ears, tail, nose, marks).
-
-**Animation** (`Creature/CreatureBrain`): a lateral-sequence walk gait drives the feet (stance/swing, stride
-scales with speed, body bob, head bob, tail sway); stances Stand / Sit / Lie / Sleep blend through the joint
-springs and cycle on a calm schedule when the pet is left alone (stand 6–14 s → sit 14–30 s → lie …); idle
-behaviours every 7–16 s (look around, ear twitch, tail flick, groom with a raised paw, the full cat stretch,
-sniff, shake, yawn); breathing, blinks, gaze saccades; nothing hops on its own. Game reactions are `OneShot`s
-(hop, wiggle, pat, wave, tail flick, pounce attack, hurt, faint on its side, eat, celebrate, dance, nod, shiver,
-stretch, yawn, shake, ear twitch, look around, sniff, groom). Physics from the previous pass stays: gravity,
-friction, walls, pick-up (hangs from the grab point), throw, landing crouch; in the air the legs dangle.
-
-**Layout (units, ground = 0, +x = facing):** hip (−12, 19), shoulder (9, 20), head centre = shoulder + (6, 19),
-head 18.5 × 17, face centre = head + (2, −1): eyes at ±6.5 (3.4 × 3.8), blush at ±11.5, nose at (0.5, −3.2),
-mouth 5.5 wide just below; legs attach at hip/shoulder, segments 10 + 10, rest feet at x = −15 / 7 (far),
-−11 / 12 (near); tail root = hip + (−7, 2), joints 9 / 8 / 7 long, rest curl 125° → 85° → 50°.
-
-**Review tooling:** `Gotchi -lab <dir>` writes `lab-species.png`, `lab-emotions.png` and strips/stills for
-idle, walk, sit, groom, lie, sleep, stretch, poke, hold, dangle, drop, attack, joy, faint, beanie, scarf.
-
-Style boards used to get here (Artifacts): "Gotchi Style Board" (12 rendering styles, all rejected — the
-silhouette was the problem, not the shading) and "Mochi Anatomy Board" (three sitting poses; "better").
-
-## The 3D cat (2026-09-14, from the user's tuxedo-cat reference)
-
-The user supplied a flat-colour illustration (chibi tuxedo cat hugging a fish plush, left cat) and asked for a
-full 3D version in the same cartoon style. Built procedurally in Blender (`Tools/blender/build_cat.py`):
-head 1.20 × 0.98 × 0.90 over a 0.70 body, big pointed ears with pink inners, slanted almond eyes (yellow,
-vertical dark pupils, one small glint), a small white muzzle joining a white chest bib, one white glove arm
-and a white-tipped other paw, white socks, short curled tail; fur is warm dark brown (#3C2A26), outline
-near-black, three cream whiskers per side. Patch borders are baked to textures (`cat_head.png`,
-`cat_body.png`) so they stay smooth. 45 emotions map onto: happy arcs / shut lines / open eyes with a
-scalable eye bone, smile / frown / open mouth, tiltable brows, blush, tear, sweat, heart, plus dirt, drool
-and four accessories. 27 clips: 7 loops + 20 one-shots (see `Creature3D/Cat3DView`). Review with
-`Gotchi -lab <dir>`; the other 12 species remain the 2D animal rig below until they get models.
+The default background is almost empty on purpose: a wall, a skirting board, a plain floor with faint board
+lines, one window and the soft light it throws on the floor. The window tells the time (dawn, day, dusk,
+night, with the sun or the moon on its arc) and the room goes light or dark with it. Four more sets are sold in
+the shop (Meadow, Beach Day, Snow Day, Starry Night). All are painted in code by `ScenePainter`
+(anti-aliased shapes with gradients and soft shadows). Details in `12-ui-guide.md`.
 
 ## Tooling
 
-- No in-house 2D/3D art skill on the team currently — AI generation tools (e.g. PixelLab.ai and others
-  TBD) planned for asset generation.
-- Recommended split: lean on AI tools for high-volume, lower-stakes 2D assets (icons, backgrounds, item
-  variations, UI elements). Treat the 3D creature model + rig/animations as a higher-stakes asset worth
-  extra care (possibly a freelance 3D artist) since it's the thing players look at constantly.
-- **Recommended two-tool pipeline for locking and reusing "our" style:**
-  1. **Concepting/style-lock phase:** use Gemini 2.5 Flash Image ("Nano Banana") to explore the
-     look and lock a written style guide (palette, proportions, shading/outline rules) — it's strong at
-     editing/re-posing the *same* character consistently from a reference image, which is exactly what's
-     needed to test "does our style hold up across many creatures/poses" before committing to it.
-  2. **Production phase:** once the style is locked, produce actual game-ready sprites in PixelLab.ai,
-     since it's purpose-built for consistent pixel-art sprite sheets/variations (palette-locked, animation
-     frames) rather than one-off illustrations. Feed it the reference images + written rules from step 1.
-  - This matters a lot for `09-pets-and-emotions.md`'s emotion-state art (585+ planned states across 13
-    creatures) — the whole point of locking a style guide first is to make each new state fast/cheap to
-    produce consistently, rather than re-deriving the look every time.
+No 2D or 3D artist on the team. The cat is built procedurally in Blender by script, with Claude driving Blender
+live; the UI and the rooms are drawn in code, so the game ships with no hand-made image assets. The earlier plan
+to generate 2D art with AI image tools is on hold together with the pixel-portrait direction (see History).
+Whatever tool makes a character, it never starts from another game's characters
+(`05-monetization-compliance.md`).
 
-## Open questions (needs its own research pass)
+## Open questions
 
-- Concrete mood board / reference set for the explorable *world* specifically (the creature portrait style
-  is now drafted above, but the world/UI layer's visual direction is still unresolved).
-- Internal render resolution: **implemented as a fixed internal height of 540 px** (`PixelRenderer` in code)
-  with nearest-neighbour upscaling — a bit under a third of the 1080×1920 UI canvas. Still worth validating
-  on a real iPhone; it's a one-constant change.
-- Visual identity of the creature across evolution branches — how distinct should each branch look?
-- UI style specifically — "premium, non-trashy" needs to be turned into concrete rules (palette limits,
-  iconography style, typography) rather than staying a vibe.
+- What the five evolution stages look like on the cat (size, markings, an accessory, an aura?).
+- The look of battle effects: hit sparks, style-coloured flashes, heal glow.
+- The art of the world to explore, and the style rules new characters must share with the cat so the roster
+  reads as one game (the wine outline, flat colour, the amber-eye treatment?).
+- Store art: icon direction and screenshot style for the older audience.
+
+## History
+
+- **Pixel-art portraits (v0.1).** The first plan was a Celeste-like pixel world with 2D creature portraits: a
+  seated chibi pose, a 2 px outline, two-tone cel shading, six colours, one portrait per species and emotion
+  (585 states), generated with AI tools from prompt templates (DaVinci and ChatGPT matched the style from text;
+  Nano Banana only when editing from a reference image; PixelLab was planned for production sprites). Dropped:
+  the cat is 3D and the UI is drawn in code.
+- **The 2D animal rig (2026-09-14).** A four-legged vector animal drawn every frame (`Creature/CreatureBody`,
+  `CreatureBrain`, `VectorMesh`) with a walk gait, stances and idle behaviours, for thirteen species. The code
+  is still in the project, the creature lab still renders it and the battle bars reuse its `VectorMesh`; the
+  first release shows only the 3D cat.
+- **The first 3D cat (2026-09-14).** A different model with baked textures (`build_cat.py`). Retired.

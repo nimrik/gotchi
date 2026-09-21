@@ -1,114 +1,100 @@
-# Gotchi — Pet Species & Emotion States
+# Gotchi — Characters & Faces
 
-Status: draft v0.1 — species roster and emotion taxonomy locked; art production plan (variation counts,
-sequencing) still open.
+Status: v0.2 (2026-09-21). The file keeps its old name so links hold. It used to be "Pet species & emotion
+states"; the species picker and the emotion system are gone, and what is left of both is described here.
 
-## Species roster (13, finalized)
+## One character: the cat
 
-Player chooses their starting creature from these 13 species. All are generic animal types (no
-copyrighted/trademarked character names) to stay clear of IP issues in store copy and marketing:
+The first release has one animal. Onboarding asks for a name (default "Mochi") and nothing else about the pet.
+How it looks and moves is in `03-art-direction.md`.
 
-Bunny, Cat, Panda, Red Panda, Seal, Raccoon, Penguin, Fennec, Fox, Pig, Otter, Hedgehog, Dog.
+**Coats.** The player's cat is always the painted cocoa cat. Every other cat is the same model in another coat
+(`Creature3D/CatCoat`), which re-colours the palette keys:
 
-(A deer/fawn species was considered and dropped — "Bambi" is a specific Disney trademark, not a generic
-name, and the team chose not to include a reworked version of it either.)
-
-## Emotion taxonomy (finalized categories/sub-emotions)
-
-Every sub-emotion below gets its own unique pixel-art state per creature (not shared/collapsed with
-siblings). The emotion → gameplay-state wiring (what triggers each state) is handled in code by the team,
-not specified here — this doc only defines the art states needed.
-
-| Category | Sub-emotions |
+| Who | Coats |
 |---|---|
-| Joy / Happiness | Joy, gladness, relief, love, pride, satisfaction |
+| The player | cocoa |
+| Other keepers (rivals, leaderboards, profiles) | ginger, smoke, night, cream |
+| Wild cats (the parked campaign) | tabby, ash, rust, shadow |
+
+## Leaning: what kind of fighter it is
+
+The chip after the level in the status block. The **style** says how the cat fights, the **most trained stat**
+says what it is good at, and together they name it. It took the place of the mood chip on 2026-09-21. It is a
+label for the player, and later for other players. It changes nothing in a fight.
+
+| Style | Health | Attack | Defense | Speed |
+|---|---|---|---|---|
+| **Claw** | Brawler | **Fighter** | Bruiser | Striker |
+| **Fluff** | Tank | Crusher | **Guardian** | Bouncer |
+| **Trick** | Survivor | Ambusher | Trickster | **Shadow** |
+
+- No style yet: **Rookie**. Every stat at rank 3 or more and within one rank of each other: **All-rounder**.
+- A tie goes to the style's own stat (bold), which also names an untrained cat.
+- The chip takes the style's colour (Claw coral, Fluff mint, Trick lavender, Rookie grey).
+- Code: `BattleSystem.Leaning`. Pressing the XP bar shows the leaning with a one-line description.
+
+## Faces: a vocabulary, not a system
+
+There is **no emotion system**. Until 2026-09-21 the game picked one of 45 moods from the pet's needs and showed
+it as a chip; the needs are gone and so is the picking. What stayed is the renderer's vocabulary: 45 named faces
+(`Data/EmotionCatalog`, `Creature/Expressions`, `PetPortraitView.SetFace`), built from the model's face meshes.
+The game uses a handful today:
+
+| When | Face |
+|---|---|
+| At home, idle | Satisfaction (calm, content) |
+| Poked too much | Irritation, until the poke heat cools |
+| Worn out (under a tenth of its health) | the fainted pose, eyes shut |
+| Petting | the closed happy arcs, for under a second |
+| Story and cutscenes | any of the 45 |
+
+The amber eyes stay open in every face except sleep, fainting and the petting arcs (`03-art-direction.md`).
+
+**The 45 faces**, in ten families, kept as the brief for any character that gets a face rig:
+
+| Family | Faces |
+|---|---|
+| Joy | Joy, gladness, relief, love, pride, satisfaction |
 | Sadness | Grief, sorrow, loneliness, despair, depression |
 | Anger | Rage, fury, irritation, annoyance, resentment |
 | Fear | Terror, panic, anxiety, worry, nervousness |
 | Disgust | Dislike, revulsion, contempt, aversion |
 | Surprise | Astonishment, amazement, shock |
-| Guilt & Shame | Remorse, regret, embarrassment, humiliation |
-| Connection & Care | Compassion, empathy, gratitude, affection, warmth |
+| Guilt & shame | Remorse, regret, embarrassment, humiliation |
+| Connection | Compassion, empathy, gratitude, affection, warmth |
 | Vulnerability | Helplessness, powerlessness, inadequacy, overwhelmed |
-| Interest & Awe | Curiosity, wonder, inspiration, excitement |
+| Interest & awe | Curiosity, wonder, inspiration, excitement |
 
-45 sub-emotions total across 10 categories.
+Each has a one-line description in `EmotionCatalog.GetDescription` (for example Pride: chin raised, chest
+puffed out, narrowed eyes with a small smile; Shock: very wide eyes with tiny pupils, a straight gasp, a frozen
+body). `Gotchi -lab <dir>` renders the whole sheet. Keep faces readable at small size: exaggerated, simple
+shapes.
 
-## Emotion visual expression key (draft v0.1)
+## Later characters
 
-One-line facial-expression/body-language description per sub-emotion, written for the seated chibi base
-pose in `03-art-direction.md`'s creature portrait style guide. Species-agnostic — plug the relevant row
-into prompt template #3 (emotion variant) for any species. Keep expressions readable at small pixel-art
-scale: exaggerated, simple shapes, not subtle.
+More animals arrive with the world to explore, first as wild encounters, then as keepers' pets, then perhaps as
+team members. Rules for all of them:
 
-| Sub-emotion | Expression |
-|---|---|
-| Joy | Wide open smile, eyes closed in a happy arc, slight forward bounce |
-| Gladness | Soft closed-eye smile, relaxed shoulders, gentle head tilt |
-| Relief | Eyes half-closed, slumped relaxed posture, small exhale mark above head |
-| Love | Heart-shaped eyes (or small heart above head), both paws clasped near chest |
-| Pride | Chin raised, chest puffed out, confidently narrowed eyes with a small smile |
-| Satisfaction | Content closed-mouth smile, half-lidded eyes, one paw resting on belly |
-| Grief | Eyes shut tight, deep downturned frown, one large tear, hunched posture |
-| Sorrow | Droopy eyes, small tear, head tilted down |
-| Loneliness | Small hunched posture, paws wrapped around self, eyes looking down and aside |
-| Despair | Eyes wide and hollow, wavering open frown, shoulders slumped forward |
-| Depression | Flat half-lidded eyes, straight neutral-to-down mouth, body slumped low |
-| Rage | Furrowed brow, bared teeth, flushed cheeks, clenched paws, anger marks above head |
-| Fury | Sharp angled eyebrows, wide shouting open mouth, whole body leaning forward |
-| Irritation | One eyebrow raised, tight flat mouth line, slight squint |
-| Annoyance | Narrowed eyes, small flat mouth, arms crossed |
-| Resentment | Sideways glare, tight closed mouth, arms crossed, body turned slightly away |
-| Terror | Eyes wide with shrunk pupils, open scream-shaped mouth, body shrinking back, sweat drop |
-| Panic | Wide shaking eyes, open trembling mouth, paws raised near face |
-| Anxiety | Small worried eyes, subtle frown, one paw fidgeting, sweat drop |
-| Worry | Furrowed brow, small "o"-shaped mouth, eyes glancing sideways |
-| Nervousness | Half-closed shifting eyes, small awkward smile, one paw scratching head |
-| Dislike | One eye squinted, slight downward smirk, head tilted away |
-| Revulsion | Scrunched nose, tongue out, eyes squeezed shut, leaning back |
-| Contempt | One eyebrow raised, small smirk, eyes half-lidded looking down at viewer |
-| Aversion | Head turned away, eyes averted, mouth in a small grimace |
-| Astonishment | Round wide eyes, small round open mouth, both paws raised beside face |
-| Amazement | Sparkling wide eyes, open smiling mouth, leaning forward with interest |
-| Shock | Extremely wide eyes with tiny pupils, straight-line open gasp mouth, stiff/frozen body |
-| Remorse | Downcast eyes, small frown, one paw rubbing back of head |
-| Regret | Closed eyes, furrowed brow, head hanging low |
-| Embarrassment | Deep blush, small awkward smile, eyes looking away |
-| Humiliation | Very deep blush, eyes squeezed shut, body curled small, head down |
-| Compassion | Soft gentle eyes, warm smile, both paws reaching forward |
-| Empathy | Soft downturned eyebrows, gentle closed-mouth smile, head tilted, one paw extended |
-| Gratitude | Closed happy eyes, paws pressed together near chest, small sparkle nearby |
-| Affection | Flushed cheeks, closed content eyes, small smile, paws hugging self |
-| Warmth | Soft half-closed eyes, gentle smile, faint pink glow on cheeks |
-| Helplessness | Droopy wide eyes, small open frown, paws hanging limp at sides |
-| Powerlessness | Eyes looking down, slumped shoulders, one paw half-raised then dropped |
-| Inadequacy | Small hunched posture, eyes averted downward, tiny frown |
-| Overwhelmed | Swirling/dizzy eyes, small zigzag mouth, paws pressed to head |
-| Curiosity | One eyebrow raised, head tilted, wide inquisitive eyes, one paw touching chin |
-| Wonder | Sparkling wide eyes looking upward, small open smile, paws clasped |
-| Inspiration | Bright wide eyes with a tiny sparkle/star above head, confident smile |
-| Excitement | Big open-mouth smile, sparkling eyes, both paws raised up, slight jump/bounce pose |
-
-## Art production scope (open — needs a plan before Phase 3 starts)
-
-- **Scale:** 45 sub-emotions × 13 creatures = 585 unique pixel-art states minimum, before counting
-  multiple pose/expression variations per sub-emotion ("several per emotion" was floated but not decided —
-  see open question below). This is a very large art production job for a two-person, beginner-Unity/C#,
-  side-project-pace team (see `01-vision.md` team & scope reality check) — plan for it explicitly rather
-  than treating it as a normal-sized task.
-- **Recommended sequencing (not yet decided):** produce the full 45-state set for one creature first,
-  validate the pipeline (style consistency, production time per state, in-game legibility at target
-  resolution) before committing to all 13 — mirrors the "1-2 branches before full build-out" approach
-  already used for the skill tree in `08-project-checklist.md` Phase 2.
-- **Where this art is used:** likely a 2D portrait/status representation (icon or small sprite) rather
-  than full-body 3D animation for all 45 states on the 3D creature model — full 3D emotional animation at
-  this granularity would be a much larger scope again. Needs a decision alongside the open "when is the
-  creature 2D vs 3D" question in `03-art-direction.md`.
+- **Original designs only.** Generic animal types, our own names. The early roster idea was Bunny, Cat, Panda,
+  Red Panda, Seal, Raccoon, Penguin, Fennec, Fox, Pig, Otter, Hedgehog, Dog (a fawn was dropped because "Bambi"
+  is a trademark). Nothing from another game, in any form (`05-monetization-compliance.md`).
+- **What one character costs:** a Blender build script in the manner of `build_cat2.py` (model, rig, face
+  meshes, accessories), the 27 clips plus the six battle clips, a coat table, and a review from the front, the
+  side and the back. Plan for it as a project of its own, not as a content drop.
+- **Where they plug in:** `BattleFighterSetup.Species` and `WildAreaDef.Species`; `PetPortraitView` routes a
+  species to its view.
 
 ## Open questions
 
-- How many pose/expression variations per sub-emotion ("several" was mentioned but not quantified) —
-  1 canonical state per sub-emotion, or a small set (e.g. 2-3) per state?
-- Which creature gets the full 45-state set first, to validate the art pipeline before scaling to all 13?
-- Confirm these states render as 2D portraits/icons rather than full 3D creature animations (affects both
-  art cost and the tech rendering-mode question in `03-art-direction.md`).
+- What the five evolution stages change on the cat.
+- Whether leanings should do something one day (a small passive per leaning) or stay labels.
+- Which faces the battle should use (a grin on a strong hit, a wince on a weak one) once the battle clips exist.
+- The second character: which animal, and which style rules it shares with the cat.
+
+## History
+
+v0.1 planned thirteen species chosen at the start, and 45 emotion states as unique pixel-art portraits per
+species (585 images). The portraits were never made: the cat became a 3D model with a face rig. The emotion
+engine (ambient mood from needs, timed overrides, a mood chip with the mood's colour) was removed on 2026-09-21
+together with the needs.

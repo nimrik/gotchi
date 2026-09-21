@@ -1,68 +1,63 @@
 # Gotchi — Apple App Store Compliance Questionnaire
 
-Status: draft v0.1 — working checklist to answer before submission. Not legal advice; a real legal/
-compliance review should still happen before launch given the child audience. Re-verify against Apple's
-live guidelines closer to submission, since these do get updated.
+Status: v0.2 (2026-09-21). The working checklist before submission. Not legal advice; get a real legal and
+compliance review before launch, and re-check Apple's live guidelines each time, because they change.
 
-## Decision log (answered so far)
+## Decision log
 
 | Question | Decision | Notes |
 |---|---|---|
-| Target audience | **Repositioned to tweens/teens/nostalgic young adults**, not primarily under-13 | Genuine repositioning (tone, marketing, content) — see `01-vision.md`. This is what makes a 13+ posture defensible; a label change alone would not be. |
-| Opt into Apple's Kids Category? | **No** | Consistent with the repositioned audience — Kids Category is for apps designed for ages 11 and under. |
-| Age rating target | **Aiming for content that genuinely supports 13+** | Important: Apple *calculates* the rating from a content questionnaire — it isn't freely chosen. A cute pet-raising game with no mature content may still calculate lower (4+/9+) regardless of marketing intent, and Apple's Guideline 1.3 can override a declared rating if actual design/marketing still reads as "for kids under 11." Revisit this honestly once store copy, screenshots, and tone are finalized. |
-| Does guideline 24.x (kids-under-13 rules) still apply? | **Likely reduced, not eliminated** | Guideline 24.x applies to apps "primarily intended for kids under 13." With a genuine older-audience repositioning this is less clearly triggered, but virtual pet games organically attract younger players in practice — worth keeping conservative defaults (see below) rather than assuming zero exposure. |
-| Monetization | Free + IAP for **visual effects / cosmetics and bonuses** | No ads planned by default. |
-| IAP access | **Parental-gate-style friction kept as good practice**, not treated as a hard Apple mandate under this positioning | Since the app may still be genuinely used by younger kids in practice, a lightweight purchase-confirmation step is still worth keeping even without a strict Kids Category obligation. |
-| Personal data collected | **Age (or age band) only** | No name, email, photos, location, or other PII. Stored as a flag, not linked to persistent identifiers or sent to third parties. Keeping this minimal is a sound default regardless of audience positioning. |
-| Behavioral advertising | **Not planned** | Keeping this off the table avoids reopening COPPA exposure even under the older-audience positioning, since actual users skewing younger is a real possibility for this genre. |
+| Audience | Tweens, teens, nostalgic young adults; not primarily under-13 | A real positioning in tone, store copy and content (`01-vision.md`). A label alone would not hold up. |
+| Kids Category | **No** | It is for apps designed for ages 11 and under. |
+| Age rating | Whatever the questionnaire calculates, answered honestly | Apple calculates the rating; it is not chosen. The game now has turn-based fights between cartoon cats, so expect the cartoon or fantasy violence question (mild, no blood, the loser lies down). Apple can override a declared rating if design and marketing read as "for young kids" (Guideline 1.3). |
+| Kids-under-13 rules | Reduced, not gone | Pet games draw younger players in practice, so the defaults below stay conservative. |
+| Monetization | Free with fixed-price purchases: hearts, looks, timed bonuses | No ads. No random paid rewards. Hearts never buy battle power (`05-monetization-compliance.md`, with two open leaks). |
+| Purchase friction | A YES / NO confirmation before every spend; real-money items hidden for the under-13 band | Built. Kept as good practice, not because a strict parental gate is mandated under this positioning. |
+| Payment | Apple's in-app purchase system only | Guideline 3.1.1. Mock today; `StoreKitPurchaseService` is the production seam. |
+| Personal data | An age band, stored locally, tied to no identifier, sent to nobody | The optional account (display name, email) is a mock today and must be covered by the privacy policy before it is real. |
+| Advertising | None | Keeps behavioural-ad and COPPA exposure off the table. |
+| User interaction | None today: no chat, no user-generated text; leaderboards show a display name, a cat and numbers | Display names will need a filter once accounts are real. Player-to-player trading and live PvP change this answer when they arrive. |
+| Intellectual property | Original characters, names and text only | Rules in `05-monetization-compliance.md`. IP review before launch. |
+| Notifications | One kind ("rested and ready"), quiet hours 21:00 to 09:00, switchable in Settings | Built as a log stub. |
 
-## Open questions to work through before submission
+## To do before submission
 
-### App Store Connect setup
-- [ ] Complete the age rating questionnaire in App Store Connect honestly — check what it actually
-      calculates out to before assuming 13+ is achievable; if it lands at 4+/9+ anyway, revisit the
-      audience/compliance framing rather than trying to force a higher number.
-- [ ] Decide final category placement (Games subcategory choices — up to two).
-- [ ] Confirm: NOT selecting "Made for Kids" checkbox, consistent with the repositioned audience.
-- [ ] Keep store metadata (screenshots, app name, description, icon) consistent with the older-audience
-      positioning — Apple has explicitly rejected apps where declared rating and actual presentation/
-      content don't match (Guideline 1.3), including cases where developers tried to raise their rating
-      specifically to escape Kids Category treatment.
+### App Store Connect
+- [ ] Fill in the age rating questionnaire honestly and see what it calculates. If it comes out lower than the
+      positioning assumes, revisit the framing; do not force the number.
+- [ ] Choose the category and up to two Games subcategories.
+- [ ] Confirm "Made for Kids" is NOT selected.
+- [ ] Keep name, icon, screenshots and description consistent with the older-audience positioning, and free of
+      any other game's name or catchphrases.
 
-### Parental gate implementation
-- [ ] Design the parental gate screen(s) — needs to guard: entry to the IAP/shop screen, and any future
-      links out of the app (social links, cross-promotion, support/contact links).
-- [ ] Decide gate mechanism: math problem, typed confirmation code, hold-to-confirm, or platform-level
-      (e.g. Face ID / device passcode re-entry) — needs a UX pass, not just a compliance checkbox.
+### Purchases
+- [ ] Replace the mock with StoreKit, with receipt validation and Restore Purchases.
+- [ ] Decide whether the confirmation step needs to be stronger for real money (a typed answer or a device
+      passcode) given that younger players will be present.
+- [ ] Settle the two leaks in the hearts rule (`05-monetization-compliance.md`) before products are created.
 
-### Privacy & data
-- [ ] Write a privacy policy (required for apps primarily intended for kids under 13, regardless of category).
-- [ ] Confirm the age-band collection flow: single yes/no or bracket question, stored locally/anonymously,
-      never transmitted to third-party SDKs.
-- [ ] Audit every third-party SDK before integration (analytics, crash reporting, IAP processing) for
-      whether it transmits any identifier that could combine with the age flag to identify a specific child.
-- [ ] Decide on COPPA compliance approach directly (this is a US federal law, separate from Apple's rules) —
-      likely requires either avoiding data practices that trigger COPPA obligations entirely, or building
-      the notice/consent mechanisms COPPA requires if any personal info collection expands later.
+### Privacy and data
+- [ ] Write the privacy policy and the terms; link them from Settings (stubs today).
+- [ ] Review the wording of the age-band question in onboarding.
+- [ ] Audit every SDK before it goes in (analytics, crash reporting, purchases, notifications) for identifiers
+      that could combine with the age band.
+- [ ] Decide the COPPA approach directly (US law, separate from Apple): avoid the practices that trigger it, or
+      build the notice and consent it requires. The same for GDPR-K if the game ships in the EU.
+- [ ] A display-name filter before real accounts.
 
-### Ads (if ever reconsidered later)
-- [ ] If ads are added in the future: contextual only, no behavioral targeting, ad creative must be
-      appropriate for the young audience — and Kids Category ad rules would apply anyway if the app is
-      still "primarily intended for kids under 13," category opt-in or not.
+### Before online features
+- [ ] Trading: a moderation plan, and whether under-13 accounts can trade at all.
+- [ ] Live PvP: no free text between players; report and block if any identity is shown.
 
 ### Ongoing
-- [ ] Re-check this document against Apple's live App Review Guidelines before each submission — children's
-      privacy rules are an area Apple updates periodically.
-- [ ] If usage data later shows a meaningfully older audience than expected, revisit whether guideline 24.x
-      framing still applies, and whether Kids Category becomes worth reconsidering.
+- [ ] Re-read Apple's App Review Guidelines before each submission.
+- [ ] If usage shows a younger audience than intended, revisit the under-13 rules and the Kids Category.
 
-## Reference (for context, not exhaustive)
+## Reference (paraphrased, not exhaustive)
 
-Apple's relevant guideline language (paraphrased, not quoted verbatim):
-- Apps primarily intended for kids under 13 must include a privacy policy, avoid behavioral advertising,
-  and use a parental gate before allowing link-outs or commerce.
-- Kids Category apps specifically must additionally avoid third-party analytics/advertising in the general
-  case, and can't transmit PII or device info to third parties.
-- A parental gate is meant to be something a young child can't reliably pass by accident (e.g. a math
-  problem or typed confirmation), not just an "Are you an adult? Yes/No" tap.
+- Apps primarily intended for kids under 13 must have a privacy policy, avoid behavioural advertising, and use
+  a parental gate before link-outs or commerce.
+- Kids Category apps must also avoid third-party analytics and advertising in the general case and cannot send
+  personal or device information to third parties.
+- A parental gate is something a young child cannot pass by accident (a sum, a typed confirmation), not an
+  "Are you an adult?" button.

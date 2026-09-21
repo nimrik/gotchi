@@ -12,10 +12,10 @@ namespace Gotchi.Core
         public ISaveService SaveService;
         public IAuthService Auth;
         public AutomationSystem Automation;
-        public NeedsSystem Needs;
-        public EmotionSystem Emotions;
         public SkillTreeSystem Skills;
-        public CareActionService Care;
+        public BattleSystem Battle;
+        public CampaignSystem Campaign;
+        public CampSystem Camp;
         public LevelSystem Level;
         public BoostSystem Boosts;
         public ILeaderboardService Leaderboards;

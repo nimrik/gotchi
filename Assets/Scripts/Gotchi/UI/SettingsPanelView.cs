@@ -72,7 +72,7 @@ namespace Gotchi.UI
             var sound = Page("Sound");
             SliderRow(sound, "Effects", GameSettings.SfxVolume, v => GameSettings.SfxVolume = v);
             SliderRow(sound, "Music", GameSettings.MusicVolume, v => GameSettings.MusicVolume = v);
-            _notificationsButton = ButtonRow(sound, "Care reminders", "Gentle nudges, never at night.", GameSettings.NotificationsEnabled ? "On" : "Off", UIFactory.Mint, () =>
+            _notificationsButton = ButtonRow(sound, "Rested reminder", "One nudge when health and mana are back. Never at night.", GameSettings.NotificationsEnabled ? "On" : "Off", UIFactory.Mint, () =>
             {
                 GameSettings.NotificationsEnabled = !GameSettings.NotificationsEnabled;
                 UIFactory.SetButtonLabel(_notificationsButton, GameSettings.NotificationsEnabled ? "On" : "Off");

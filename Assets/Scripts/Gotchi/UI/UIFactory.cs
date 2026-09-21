@@ -419,7 +419,7 @@ namespace Gotchi.UI
             return element;
         }
 
-        public enum IconKind { Cookie, Bubbles, Shower, Moon, Ball, Sparkle, Bag, Shop, Heart, Coin, Gem, Chat, Shield, Paw, Flask, Leaf, Compass, Gear, Trophy, Bell }
+        public enum IconKind { Cookie, Bubbles, Shower, Moon, Ball, Sparkle, Bag, Shop, Heart, Coin, Gem, Chat, Shield, Paw, Flask, Leaf, Compass, Gear, Trophy, Bell, Book, Fish }
 
         // Procedural icons built from circles and rounded rects; `background` is what sits behind the
         // icon (needed for the masked crescent / ring tricks).
@@ -609,6 +609,48 @@ namespace Gotchi.UI
                         var leaf = Dot(root, Hex("9ED9B5"), s * 0.42f, side * s * 0.2f, s * 0.1f);
                         leaf.rectTransform.localScale = new Vector3(0.7f, 1.1f, 1f);
                         leaf.rectTransform.localRotation = Quaternion.Euler(0f, 0f, side * 35f);
+                    }
+                    break;
+                }
+                case IconKind.Fish:
+                {
+                    // A fish-shaped treat: biscuit body, tail fin, an eye and a baked line.
+                    var tail = CreateCursor(root, s * 0.46f, Hex("E89A4C"));
+                    tail.rectTransform.anchorMin = tail.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+                    tail.rectTransform.sizeDelta = new Vector2(s * 0.40f, s * 0.52f);
+                    tail.rectTransform.anchoredPosition = new Vector2(-s * 0.30f, 0f);
+                    tail.raycastTarget = false;
+                    var body = CreateCircle("Body", root, Hex("F5B461"), s * 0.72f);
+                    body.rectTransform.anchoredPosition = new Vector2(s * 0.10f, 0f);
+                    body.rectTransform.localScale = new Vector3(1f, 0.68f, 1f);
+                    body.raycastTarget = false;
+                    var belly = CreateCircle("Belly", root, Hex("FFD9A0"), s * 0.44f);
+                    belly.rectTransform.anchoredPosition = new Vector2(s * 0.12f, -s * 0.07f);
+                    belly.rectTransform.localScale = new Vector3(1f, 0.5f, 1f);
+                    belly.raycastTarget = false;
+                    Dot(root, Hex("5A3A2A"), s * 0.10f, s * 0.28f, s * 0.07f);
+                    break;
+                }
+                case IconKind.Book:
+                {
+                    // An open storybook: a cover, two pages, a few lines of text.
+                    var cover = CreateRounded("Cover", root, PinkDark, 0.4f);
+                    cover.rectTransform.sizeDelta = new Vector2(s * 0.94f, s * 0.66f);
+                    cover.rectTransform.anchoredPosition = new Vector2(0f, -s * 0.04f);
+                    cover.raycastTarget = false;
+                    foreach (float side in new[] { -1f, 1f })
+                    {
+                        var page = CreateRounded("Page", root, Hex("FFF8EE"), 0.3f);
+                        page.rectTransform.sizeDelta = new Vector2(s * 0.41f, s * 0.58f);
+                        page.rectTransform.anchoredPosition = new Vector2(side * s * 0.215f, s * 0.03f);
+                        page.raycastTarget = false;
+                        for (int i = 0; i < 3; i++)
+                        {
+                            var line = CreateRounded("Line", root, Hex("D6C4BC"), 1f);
+                            line.rectTransform.sizeDelta = new Vector2(s * (i == 2 ? 0.17f : 0.27f), s * 0.055f);
+                            line.rectTransform.anchoredPosition = new Vector2(side * s * 0.215f - (i == 2 ? s * 0.05f : 0f), s * 0.17f - i * s * 0.13f);
+                            line.raycastTarget = false;
+                        }
                     }
                     break;
                 }
@@ -897,6 +939,28 @@ namespace Gotchi.UI
             label.horizontalOverflow = HorizontalWrapMode.Overflow;
             Place(label.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(56f, 0f), new Vector2(0f, 0f));
             return label;
+        }
+
+        // Width of `text` on one line as `label` would draw it. The label's own text is left alone, so a running
+        // count-up is not disturbed.
+        public static float MeasureWidth(Text label, string text)
+        {
+            var settings = label.GetGenerationSettings(Vector2.zero);
+            settings.horizontalOverflow = HorizontalWrapMode.Overflow;
+            return label.cachedTextGeneratorForLayout.GetPreferredWidth(text, settings) / label.pixelsPerUnit;
+        }
+
+        // Sizes the wallet box to what it shows, so no blank strip trails the hearts count:
+        // [12][icon + coins][22][icon + hearts][18]. Returns the width the box needs.
+        public static float FitWalletBox(Text coins, Text hearts, string coinsText, string heartsText)
+        {
+            const float Left = 12f, Gap = 22f, Right = 18f, LabelLeft = 56f;
+            float coinsWidth = LabelLeft + Mathf.Ceil(MeasureWidth(coins, coinsText));
+            float heartsWidth = LabelLeft + Mathf.Ceil(MeasureWidth(hearts, heartsText));
+            float heartsLeft = Left + coinsWidth + Gap;
+            Place((RectTransform)coins.transform.parent, new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(Left, 8f), new Vector2(Left + coinsWidth, -8f));
+            Place((RectTransform)hearts.transform.parent, new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(heartsLeft, 8f), new Vector2(heartsLeft + heartsWidth, -8f));
+            return heartsLeft + heartsWidth + Right;
         }
 
         // Fits a button to its label and pins its right edge `right` px inside the parent's right edge.

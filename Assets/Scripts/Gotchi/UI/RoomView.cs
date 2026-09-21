@@ -12,14 +12,14 @@ namespace Gotchi.UI
     public class RoomView
     {
         private readonly MonoBehaviour _host;
-        private readonly Text _bubbleText;
-        private readonly Image _bubbleDot;
-        private readonly RectTransform _bubble;
+        private readonly Image _moodChip;
+        private readonly Text _moodText;
         private readonly RectTransform _petAnchor;
         private readonly Image _wishChip;
         private readonly Text _wishText;
-        private readonly Action<CareAction> _onWish;
-        private readonly Action _onCuddle;
+        private readonly Action _onTreat;
+        private SegmentedBar _hpBar, _mpBar;
+        private Text _hpText, _mpText;
         private readonly Text _nameText;
         private readonly Text _xpText;
         private readonly RectTransform _levelTrack;
@@ -30,20 +30,22 @@ namespace Gotchi.UI
         private readonly RectTransform _fairyLights;
         private readonly RectTransform _sceneLayer;
         private string _sceneId;
+        private int _sceneBucket = -1;
         private readonly RectTransform _levelFill;
-        private bool _cuddleMode;
         private RectTransform _wishIcon;
         private UIFactory.IconKind? _wishIconKind;
-        private CareAction? _wishAction;
+
+        public const float StatusHeight = 136f;     // two rows: the name line (72) and health + mana (52), plus the frame
+        private const float Row1 = -40f;            // centre of the name line, down from the top of the status box
 
         public readonly RectTransform Root;
         public readonly PetPortraitView Pet;
 
-        public RoomView(Transform parent, Transform sceneParent, string petName, SpeciesType species, Action<CareAction> onWish, Action onCuddle, Action onOpenStory, Action<PetPart> onPetTap, MonoBehaviour host)
+        // `statusInfo` supplies the title and body of the info box that opens when the XP bar or the mood chip is pressed.
+        public RoomView(Transform parent, Transform sceneParent, string petName, SpeciesType species, Action onTreat, Action<PetPart> onPetTap, MonoBehaviour host, Func<(string title, string body)> statusInfo = null)
         {
             _host = host;
-            _onWish = onWish;
-            _onCuddle = onCuddle;
+            _onTreat = onTreat;
             Root = UIFactory.CreateRect("Room", parent);
 
             // Background set (floor, window/hills, sky props) — painted by RoomScenes into the full-screen
@@ -78,100 +80,115 @@ namespace Gotchi.UI
             Pet.EnableTouch(part => onPetTap?.Invoke(part));
             Pet.AllowWander = true;
 
-            // Status bar: name + species on the left, a tappable "wish" chip on the right.
+            // Status block, two rows. Row 1: name and level, the LEANING chip (what kind of fighter the build adds up
+            // to: Fighter, Guardian, Shadow ... in the style's colour; it replaced the mood chip when emotions were
+            // dropped on 2026-09-21), the XP bar with its "104 / 220 XP" caption, and the Treat button on the right.
+            // Row 2: HEALTH and MANA as slanted block bars, one block per 250 points, as the last fight left them and
+            // as resting brings them back, so the home screen always says whether the cat is fit to fight.
             var status = UIFactory.CreateCard("Status", Root, new Color(1f, 1f, 1f, 0.95f), 0.9f);
-            UIFactory.Place((RectTransform)status.transform.parent, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 0f), new Vector2(0f, 104f));
+            UIFactory.Place((RectTransform)status.transform.parent, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 0f), new Vector2(0f, StatusHeight));
             _petName = petName;
             _nameText = UIFactory.CreateText("Name", status.transform, petName, 32, UIFactory.Ink, TextAnchor.MiddleLeft, true);
             _nameText.horizontalOverflow = HorizontalWrapMode.Overflow;
-            UIFactory.Place(_nameText.rectTransform, new Vector2(0f, 0.5f), new Vector2(0.55f, 1f), new Vector2(UIFactory.Spacing.Pad, 0f), new Vector2(0f, -8f));
-            var speciesText = UIFactory.CreateText("Species", status.transform, UIFactory.PrettyName(species.ToString()) + " · tap for story", 20, UIFactory.Muted, TextAnchor.MiddleLeft);
-            UIFactory.Place(speciesText.rectTransform, new Vector2(0f, 0f), new Vector2(0.55f, 0.5f), new Vector2(UIFactory.Spacing.Pad, 22f), new Vector2(0f, 4f));
-            // XP to the next level: bar + caption on the same line as the name, right after "Lv N" (positioned in SetLevel).
+            UIFactory.Place(_nameText.rectTransform, new Vector2(0f, 1f), new Vector2(0.55f, 1f), new Vector2(UIFactory.Spacing.Pad, Row1 - 32f), new Vector2(0f, Row1 + 32f));
+            // XP to the next level: bar + caption on the same line as the name, right after the mood chip (LayoutNameLine).
             var levelTrack = UIFactory.CreatePillBar("LevelBar", status.transform, UIFactory.Butter, out _levelFill);
             _levelTrack = levelTrack.rectTransform;
-            UIFactory.Place(_levelTrack, new Vector2(0f, 0.71f), new Vector2(1f, 0.71f), new Vector2(260f, -8f), new Vector2(-500f, 8f));
+            UIFactory.Place(_levelTrack, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(260f, Row1 - 8f), new Vector2(-500f, Row1 + 8f));
             _xpText = UIFactory.CreateText("Xp", status.transform, "", 18, UIFactory.Muted, TextAnchor.MiddleRight);
             _xpText.horizontalOverflow = HorizontalWrapMode.Overflow;
-            UIFactory.Place(_xpText.rectTransform, new Vector2(1f, 0.71f), new Vector2(1f, 0.71f), new Vector2(-640f, -14f), new Vector2(-360f, 14f));
-            var storyHit = UIFactory.CreatePanel("StoryTap", status.transform, Color.clear);
-            UIFactory.Place(storyHit.rectTransform, new Vector2(0f, 0f), new Vector2(0.55f, 1f), Vector2.zero, Vector2.zero);
-            UIFactory.MakePressable(storyHit, () => onOpenStory?.Invoke());
-            _wishChip = UIFactory.CreatePill("Wish", status.transform, UIFactory.Butter);
-            UIFactory.Place(_wishChip.rectTransform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-330f, -34f), new Vector2(-16f, 34f));
-            UIFactory.MakePressable(_wishChip, () =>
+            UIFactory.Place(_xpText.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-640f, Row1 - 14f), new Vector2(-360f, Row1 + 14f));
+
+            // Leaning: a chip in the style's colour, right after "Name · Lv N" (laid out in LayoutNameLine).
+            _moodChip = UIFactory.CreatePill("Mood", status.transform, UIFactory.Butter);
+            UIFactory.Place(_moodChip.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(240f, Row1 - 22f), new Vector2(400f, Row1 + 22f));
+            _moodText = UIFactory.CreatePixelText("Text", _moodChip.transform, "", 22, UIFactory.MenuInk, TextAnchor.MiddleCenter, false);
+            _moodText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _moodText.raycastTarget = false;
+            UIFactory.Fill(_moodText.rectTransform);
+            // Pressing the XP bar (a generous hit area around the thin bar) or the leaning chip opens the block's full info.
+            var infoHit = UIFactory.CreatePanel("InfoTap", levelTrack.transform, Color.clear);
+            UIFactory.Place(infoHit.rectTransform, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-6f, -30f), new Vector2(6f, 30f));
+            if (statusInfo != null)
             {
-                if (_cuddleMode) _onCuddle?.Invoke();
-                else if (_wishAction.HasValue) _onWish?.Invoke(_wishAction.Value);
-            });
+                UIFactory.MakePressable(infoHit, () => { var info = statusInfo(); InfoTooltip.Toggle(_levelTrack, info.title, info.body, host); });
+                UIFactory.MakePressable(_moodChip, () => { var info = statusInfo(); InfoTooltip.Toggle(_moodChip.rectTransform, info.title, info.body, host); });
+            }
+            else { infoHit.raycastTarget = false; _moodChip.raycastTarget = false; }
+            _wishChip = UIFactory.CreatePill("Wish", status.transform, UIFactory.Butter);
+            UIFactory.Place(_wishChip.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-330f, Row1 - 30f), new Vector2(-14f, Row1 + 30f));
+            UIFactory.MakePressable(_wishChip, () => _onTreat?.Invoke());
             var wishDisc = UIFactory.CreateCircle("Disc", _wishChip.transform, Color.white, 38f);
             UIFactory.Place(wishDisc.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(18f, -19f), new Vector2(56f, 19f));
             wishDisc.raycastTarget = false;
             _wishText = UIFactory.CreateText("Text", _wishChip.transform, "", 24, UIFactory.Ink, TextAnchor.MiddleLeft, true);
             UIFactory.Place(_wishText.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(66f, 0f), new Vector2(-26f, 0f));
 
-            // Mood bubble: a speech box beside the pet's head with a tail cut into its border, pointing at the head.
-            // The tail is two rotated squares (anti-aliased): a dark one behind the box, a white one inside it.
-            var tailOutline = UIFactory.CreateRounded("BubbleTail", Root, UIFactory.FrameDark, 0.25f);
-            UIFactory.Place(tailOutline.rectTransform, new Vector2(0.5f, 0.42f), new Vector2(0.5f, 0.42f), new Vector2(70f, 60f), new Vector2(106f, 96f));
-            tailOutline.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 45f);
-            tailOutline.raycastTarget = false;
-            var bubble = UIFactory.CreateFrame("Bubble", Root, Color.white);
-            bubble.raycastTarget = false;
-            _bubble = bubble.rectTransform;
-            UIFactory.Place(_bubble, new Vector2(0.5f, 0.42f), new Vector2(0.5f, 0.42f), new Vector2(50f, 78f), new Vector2(390f, 158f));
-            var tailFill = UIFactory.CreateRounded("TailFill", _bubble, Color.white, 0.25f);
-            UIFactory.Place(tailFill.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(26f, -8f), new Vector2(50f, 16f));
-            tailFill.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 45f);
-            tailFill.raycastTarget = false;
-            _bubbleDot = UIFactory.CreateCircle("Dot", _bubble, UIFactory.Butter, 24f);
-            UIFactory.Place(_bubbleDot.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(26f, -12f), new Vector2(50f, 12f));
-            _bubbleDot.raycastTarget = false;
-            _bubbleText = UIFactory.CreatePixelText("Text", _bubble, "", 27, UIFactory.MenuInk, TextAnchor.MiddleLeft);
-            UIFactory.Fill(_bubbleText.rectTransform, 62f, 16f, 0f, 0f);
+            // Row 2: health on the left half, mana on the right, each "HP ▰▰▰▰▱ 1000/1200".
+            _hpBar = VitalBar(status.transform, "HP", MiniGames.BattleMiniGame.HpFill, MiniGames.BattleMiniGame.HpLine, 0f, out _hpText);
+            _mpBar = VitalBar(status.transform, "MP", MiniGames.BattleMiniGame.MpFill, MiniGames.BattleMiniGame.MpLine, 0.5f, out _mpText);
         }
 
-        public void SetEmotion(EmotionType emotion, bool animate)
+        private static SegmentedBar VitalBar(Transform parent, string label, Color fill, Color line, float from, out Text value)
         {
-            Pet.SetEmotion(emotion, animate);
-            _bubbleText.text = UIFactory.PrettyName(emotion.ToString());
-            Color mood = PetPortraitView.MoodColor(EmotionCatalog.GetCategory(emotion));
-            if (animate)
-            {
-                _host.StartCoroutine(SimpleTween.ColorTo(_bubbleDot, mood, 0.3f));
-                _host.StartCoroutine(SimpleTween.PunchScale(_bubble, 0.12f, 0.25f));
-            }
-            else _bubbleDot.color = mood;
+            const float y = 34f;   // centre of row 2, up from the bottom of the status box
+            float left = from == 0f ? UIFactory.Spacing.Pad : 12f;
+            var name = UIFactory.CreatePixelText(label, parent, label, 22, line, TextAnchor.MiddleLeft, false);
+            UIFactory.Place(name.rectTransform, new Vector2(from, 0f), new Vector2(from, 0f), new Vector2(left, y - 16f), new Vector2(left + 44f, y + 16f));
+            // The numbers follow the bar directly ("HP ▰▰▰▰▱ 1000/1200"): a slot wide enough for "1100/1100", read from its left.
+            float right = from == 0f ? 12f : UIFactory.Spacing.Pad;
+            const float numbers = 122f;
+            var bar = SegmentedBar.Create(label + "Bar", parent, fill, line);
+            bar.Skew = 12f;
+            UIFactory.Place(bar.rectTransform, new Vector2(from, 0f), new Vector2(from + 0.5f, 0f), new Vector2(left + 50f, y - 13f), new Vector2(-right - numbers - 8f, y + 13f));
+            value = UIFactory.CreatePixelText(label + "Value", parent, "", 22, UIFactory.MenuInk, TextAnchor.MiddleLeft, false);
+            value.horizontalOverflow = HorizontalWrapMode.Overflow;
+            UIFactory.Place(value.rectTransform, new Vector2(from + 0.5f, 0f), new Vector2(from + 0.5f, 0f), new Vector2(-right - numbers, y - 16f), new Vector2(-right, y + 16f));
+            return bar;
         }
 
-        public void SetWish(NeedType lowest, float value, bool canCuddle, float cuddleCooldown)
+        // Health and mana as they stand: what the last fight left plus the rest since.
+        public void SetVitals(int hp, int maxHp, int mp, int maxMp)
         {
-            UIFactory.IconKind icon;
-            string text;
-            Color color;
-            _cuddleMode = false;
-            if (value >= 70f)
+            bool low = hp * 5 <= maxHp;
+            _hpBar.SetColors(low ? MiniGames.BattleMiniGame.HpLowFill : MiniGames.BattleMiniGame.HpFill, low ? MiniGames.BattleMiniGame.HpLowLine : MiniGames.BattleMiniGame.HpLine);
+            _hpBar.Set(hp, maxHp);
+            _mpBar.Set(mp, maxMp);
+            _hpText.text = $"{hp}/{maxHp}";
+            _mpText.text = $"{mp}/{maxMp}";
+        }
+
+        // Dev/QA hook: opens the status info box as a press on the XP bar would.
+        public RectTransform LevelBar => _levelTrack;
+
+        // The chip after the level: what the cat leans to, in its style's colour. A label, nothing more.
+        public void SetLeaning(string name, Color color, bool animate)
+        {
+            string text = name.ToUpperInvariant();
+            bool changed = _moodText.text != text;
+            _moodText.text = text;
+            _moodText.color = UIFactory.LabelColorFor(color);
+            if (animate && changed)
             {
-                _cuddleMode = canCuddle;
-                icon = UIFactory.IconKind.Heart;
-                text = canCuddle ? "Cuddle!" : cuddleCooldown > 0f ? $"Cozy · {Mathf.CeilToInt(cuddleCooldown)}s" : "All cozy!";
-                color = canCuddle ? UIFactory.Primary : UIFactory.Hex("FFE1EA"); _wishAction = null;
+                _host.StartCoroutine(SimpleTween.ColorTo(_moodChip, color, 0.3f));
+                _host.StartCoroutine(SimpleTween.PunchScale(_moodChip.rectTransform, 0.12f, 0.25f));
             }
-            else
-            {
-                switch (lowest)
-                {
-                    case NeedType.Hunger: icon = UIFactory.IconKind.Cookie; text = "Snack time?"; color = UIFactory.Hex("FFDCCB"); _wishAction = CareAction.Feed; break;
-                    case NeedType.Hygiene: icon = UIFactory.IconKind.Shower; text = "Bath time?"; color = UIFactory.Hex("D9EEFF"); _wishAction = CareAction.Clean; break;
-                    case NeedType.Energy: icon = UIFactory.IconKind.Moon; text = "Nap time?"; color = UIFactory.Hex("E6DDFF"); _wishAction = CareAction.Rest; break;
-                    default: icon = UIFactory.IconKind.Ball; text = "Play time?"; color = UIFactory.Hex("FFD9E5"); _wishAction = CareAction.Play; break;
-                }
-            }
+            else _moodChip.color = color;
+            LayoutNameLine();
+        }
+
+        // The chip on the right is the TREAT button (fish icon): a snack that gives back a little health and mana,
+        // then waits out its cooldown ("Treat · 42s"). It used to ask for the lowest need; the needs are gone.
+        public void SetTreat(float treatCooldown)
+        {
+            UIFactory.IconKind icon = UIFactory.IconKind.Fish;
+            string text = treatCooldown > 0f ? $"Treat · {Mathf.CeilToInt(treatCooldown)}s" : "Treat";
+            Color color = treatCooldown > 0f ? UIFactory.Hex("FFF1D2") : UIFactory.Butter;
             _wishText.text = text;
             _wishChip.color = color;
             _wishText.color = UIFactory.LabelColorFor(color);
             float width = 66f + _wishText.preferredWidth + 40f;
-            _wishChip.rectTransform.offsetMin = new Vector2(-16f - width, -34f);
+            _wishChip.rectTransform.offsetMin = new Vector2(-14f - width, Row1 - 30f);
             if (!Mathf.Approximately(width, _wishWidth)) { _wishWidth = width; LayoutNameLine(); }
             if (_wishIconKind == icon) return;
             _wishIconKind = icon;
@@ -182,9 +199,12 @@ namespace Gotchi.UI
 
         public void ApplyRoom(string rugId, bool fairyLights, string backgroundId)
         {
-            if (_sceneId != backgroundId)
+            // The default room follows the local time, so it is repainted when its ten-minute bucket changes.
+            int bucket = backgroundId == RoomScenes.DefaultId || RoomScenes.Find(backgroundId).Id == RoomScenes.DefaultId ? RoomScenes.CozyBucket(RoomScenes.LocalNow()) : -1;
+            if (_sceneId != backgroundId || bucket != _sceneBucket)
             {
                 _sceneId = backgroundId;
+                _sceneBucket = bucket;
                 RoomScenes.Apply(_sceneLayer, RoomScenes.Find(backgroundId), _host);
             }
             switch (rugId)
@@ -196,28 +216,37 @@ namespace Gotchi.UI
             _fairyLights.gameObject.SetActive(fairyLights);
         }
 
-        public void SetLevel(int level, float progress)
+        // `xpInto` of `xpSpan` experience points into the current level; a span of 0 means the top level.
+        public void SetLevel(int level, float progress, int xpInto, int xpSpan)
         {
             _nameText.text = $"{_petName} · Lv {level}";
             _levelFill.anchorMax = new Vector2(Mathf.Max(0.03f, progress), 1f);
-            _xpText.text = $"{Mathf.RoundToInt(progress * 100f)}% to Lv {level + 1}";
+            _xpText.text = xpSpan > 0 ? $"{xpInto} / {xpSpan} XP" : "MAX";   // experience, not a percentage (asked 2026-09-21)
             LayoutNameLine();
         }
 
-        // Name line: "Name · Lv N" | XP bar stretched over the free width | "80% to Lv 5" | wish chip.
+        // Name line: "Name · Lv N" | leaning chip | XP bar stretched over the free width | "104 / 220 XP" | wish chip.
+        // When a long name leaves too little room, the caption goes first (the info box still has the numbers).
         private void LayoutNameLine()
         {
-            float left = UIFactory.Spacing.Pad + _nameText.preferredWidth + 18f;
-            float captionWidth = _xpText.preferredWidth + 4f;
-            float right = 16f + _wishWidth + 16f;                     // wish chip + gaps
-            _xpText.rectTransform.offsetMin = new Vector2(-right - captionWidth, -14f);
-            _xpText.rectTransform.offsetMax = new Vector2(-right, 14f);
-            _levelTrack.offsetMin = new Vector2(left, -8f);
-            _levelTrack.offsetMax = new Vector2(-right - captionWidth - 12f, 8f);
-        }
+            float chipLeft = UIFactory.Spacing.Pad + _nameText.preferredWidth + 14f;
+            float chipWidth = _moodText.preferredWidth + 36f;
+            _moodChip.rectTransform.offsetMin = new Vector2(chipLeft, Row1 - 22f);
+            _moodChip.rectTransform.offsetMax = new Vector2(chipLeft + chipWidth, Row1 + 22f);
 
-        public void SetConditions(float hunger, float hygiene, float energy, float happiness) =>
-            Pet.SetConditions(hunger, hygiene, energy, happiness);
+            float left = chipLeft + chipWidth + 16f;
+            float right = 14f + _wishWidth + 16f;                     // wish chip + gaps
+            float cardWidth = Root.rect.width > 1f ? Root.rect.width : 1032f;
+            float captionWidth = _xpText.preferredWidth + 4f;
+            bool showCaption = cardWidth - left - right - captionWidth - 12f >= 90f;
+            _xpText.gameObject.SetActive(showCaption);
+            if (!showCaption) captionWidth = -12f;
+            _xpText.rectTransform.offsetMin = new Vector2(-right - captionWidth, Row1 - 14f);
+            _xpText.rectTransform.offsetMax = new Vector2(-right, Row1 + 14f);
+            _levelTrack.offsetMin = new Vector2(left, Row1 - 8f);
+            _levelTrack.offsetMax = new Vector2(-right - captionWidth - 12f, Row1 + 8f);
+            _levelTrack.gameObject.SetActive(cardWidth - left - right - captionWidth - 12f >= 40f);
+        }
 
         public void FloatText(string text, Color color)
         {
@@ -233,11 +262,47 @@ namespace Gotchi.UI
             _host.StartCoroutine(HeartBurst());
         }
 
-        // Reaction to the player tapping the pet.
-        public void Boop(PetPart part)
+        // Reaction to the player tapping the pet. Hearts only while the pet still enjoys it.
+        public void Boop(PetPart part, bool happy = true)
         {
             Pet.React(part);
-            if (part != PetPart.Tail) _host.StartCoroutine(HeartBurst());
+            if (happy && part != PetPart.Tail) _host.StartCoroutine(HeartBurst());
+        }
+
+        // Poked once too often: the pet walks off the screen, stays away for `awaySeconds` and comes back.
+        public bool PetAway { get; private set; }
+
+        public void StormOff(float awaySeconds, Action onBack = null)
+        {
+            if (PetAway) return;
+            _host.StartCoroutine(StormOffRoutine(awaySeconds, onBack));
+        }
+
+        private IEnumerator StormOffRoutine(float awaySeconds, Action onBack)
+        {
+            PetAway = true;
+            float direction = UnityEngine.Random.value < 0.5f ? -1f : 1f;
+            float exitX = direction * (Root.rect.width * 0.5f + 360f);   // the whole pet, shadow and overlays past the screen edge
+            Pet.March(direction, 1.8f);
+            yield return SlidePet(0f, exitX, 1.5f);
+            yield return new WaitForSeconds(awaySeconds);
+            Pet.March(-direction, 1.3f);
+            yield return SlidePet(exitX, 0f, 2.0f);
+            Pet.StopMarch();
+            PetAway = false;
+            onBack?.Invoke();
+        }
+
+        private IEnumerator SlidePet(float fromX, float toX, float duration)
+        {
+            float elapsed = 0f;
+            while (elapsed < duration && _petAnchor != null)
+            {
+                elapsed += Time.deltaTime;
+                _petAnchor.anchoredPosition = new Vector2(Mathf.Lerp(fromX, toX, Mathf.SmoothStep(0f, 1f, elapsed / duration)), 0f);
+                yield return null;
+            }
+            if (_petAnchor != null) _petAnchor.anchoredPosition = new Vector2(toX, 0f);
         }
 
         private IEnumerator HeartBurst()

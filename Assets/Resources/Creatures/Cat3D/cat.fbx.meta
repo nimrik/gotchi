@@ -36,7 +36,7 @@ ModelImporter:
       takeName: Armature|Alert
       internalID: 2610310362927318821
       firstFrame: 0
-      lastFrame: 60
+      lastFrame: 72
       wrapMode: 2
       orientationOffsetY: 0
       level: 0
@@ -65,7 +65,7 @@ ModelImporter:
       takeName: Armature|Attack
       internalID: 4723146814002874508
       firstFrame: 0
-      lastFrame: 14
+      lastFrame: 22
       wrapMode: 1
       orientationOffsetY: 0
       level: 0
@@ -94,7 +94,7 @@ ModelImporter:
       takeName: Armature|Celebrate
       internalID: -2163422553085321073
       firstFrame: 0
-      lastFrame: 36
+      lastFrame: 48
       wrapMode: 1
       orientationOffsetY: 0
       level: 0
@@ -123,7 +123,7 @@ ModelImporter:
       takeName: Armature|Dance
       internalID: 5567560465902106206
       firstFrame: 0
-      lastFrame: 48
+      lastFrame: 60
       wrapMode: 1
       orientationOffsetY: 0
       level: 0
@@ -152,7 +152,7 @@ ModelImporter:
       takeName: Armature|EarTwitch
       internalID: 3812414571256803223
       firstFrame: 0
-      lastFrame: 10
+      lastFrame: 16
       wrapMode: 1
       orientationOffsetY: 0
       level: 0
@@ -181,7 +181,7 @@ ModelImporter:
       takeName: Armature|Eat
       internalID: 5297050669623574059
       firstFrame: 0
-      lastFrame: 36
+      lastFrame: 44
       wrapMode: 1
       orientationOffsetY: 0
       level: 0
@@ -239,7 +239,7 @@ ModelImporter:
       takeName: Armature|Groom
       internalID: -3266178259740654470
       firstFrame: 0
-      lastFrame: 40
+      lastFrame: 56
       wrapMode: 1
       orientationOffsetY: 0
       level: 0
@@ -268,7 +268,7 @@ ModelImporter:
       takeName: Armature|Happy
       internalID: -8544982944672715099
       firstFrame: 0
-      lastFrame: 48
+      lastFrame: 64
       wrapMode: 2
       orientationOffsetY: 0
       level: 0
@@ -297,7 +297,7 @@ ModelImporter:
       takeName: Armature|Hop
       internalID: 7339741916750824102
       firstFrame: 0
-      lastFrame: 16
+      lastFrame: 24
       wrapMode: 1
       orientationOffsetY: 0
       level: 0
@@ -326,7 +326,7 @@ ModelImporter:
       takeName: Armature|Hurt
       internalID: 9149661223541978141
       firstFrame: 0
-      lastFrame: 14
+      lastFrame: 24
       wrapMode: 1
       orientationOffsetY: 0
       level: 0
@@ -355,7 +355,7 @@ ModelImporter:
       takeName: Armature|Idle
       internalID: -8945691123924629249
       firstFrame: 0
-      lastFrame: 96
+      lastFrame: 120
       wrapMode: 2
       orientationOffsetY: 0
       level: 0
@@ -384,7 +384,7 @@ ModelImporter:
       takeName: Armature|LookAround
       internalID: 2460853405816944039
       firstFrame: 0
-      lastFrame: 44
+      lastFrame: 64
       wrapMode: 1
       orientationOffsetY: 0
       level: 0
@@ -413,7 +413,7 @@ ModelImporter:
       takeName: Armature|Nod
       internalID: -1671453605881448577
       firstFrame: 0
-      lastFrame: 18
+      lastFrame: 26
       wrapMode: 1
       orientationOffsetY: 0
       level: 0
@@ -442,7 +442,7 @@ ModelImporter:
       takeName: Armature|Pat
       internalID: -1095490797723657417
       firstFrame: 0
-      lastFrame: 14
+      lastFrame: 22
       wrapMode: 1
       orientationOffsetY: 0
       level: 0
@@ -471,7 +471,7 @@ ModelImporter:
       takeName: Armature|Sad
       internalID: -7235932175846496021
       firstFrame: 0
-      lastFrame: 120
+      lastFrame: 150
       wrapMode: 2
       orientationOffsetY: 0
       level: 0
@@ -500,7 +500,7 @@ ModelImporter:
       takeName: Armature|Shake
       internalID: -3549762148445311846
       firstFrame: 0
-      lastFrame: 18
+      lastFrame: 24
       wrapMode: 1
       orientationOffsetY: 0
       level: 0
@@ -529,7 +529,7 @@ ModelImporter:
       takeName: Armature|Shiver
       internalID: -7558497315501467832
       firstFrame: 0
-      lastFrame: 24
+      lastFrame: 30
       wrapMode: 1
       orientationOffsetY: 0
       level: 0
@@ -558,7 +558,7 @@ ModelImporter:
       takeName: Armature|Sleep
       internalID: 5754330143168782828
       firstFrame: 0
-      lastFrame: 150
+      lastFrame: 180
       wrapMode: 2
       orientationOffsetY: 0
       level: 0
@@ -587,7 +587,7 @@ ModelImporter:
       takeName: Armature|Sniff
       internalID: -1808158875931175914
       firstFrame: 0
-      lastFrame: 24
+      lastFrame: 32
       wrapMode: 1
       orientationOffsetY: 0
       level: 0
@@ -616,7 +616,7 @@ ModelImporter:
       takeName: Armature|Stretch
       internalID: -6132235677410708637
       firstFrame: 0
-      lastFrame: 40
+      lastFrame: 54
       wrapMode: 1
       orientationOffsetY: 0
       level: 0
@@ -645,7 +645,7 @@ ModelImporter:
       takeName: Armature|TailFlick
       internalID: 4869585553647612659
       firstFrame: 0
-      lastFrame: 14
+      lastFrame: 20
       wrapMode: 1
       orientationOffsetY: 0
       level: 0
@@ -703,7 +703,7 @@ ModelImporter:
       takeName: Armature|WaveL
       internalID: 8613272599200477817
       firstFrame: 0
-      lastFrame: 30
+      lastFrame: 38
       wrapMode: 1
       orientationOffsetY: 0
       level: 0
@@ -732,7 +732,7 @@ ModelImporter:
       takeName: Armature|WaveR
       internalID: -2722152819905865070
       firstFrame: 0
-      lastFrame: 30
+      lastFrame: 38
       wrapMode: 1
       orientationOffsetY: 0
       level: 0
@@ -761,7 +761,7 @@ ModelImporter:
       takeName: Armature|Wiggle
       internalID: 6224824746721569604
       firstFrame: 0
-      lastFrame: 20
+      lastFrame: 28
       wrapMode: 1
       orientationOffsetY: 0
       level: 0
@@ -790,7 +790,7 @@ ModelImporter:
       takeName: Armature|Yawn
       internalID: 635965436658257319
       firstFrame: 0
-      lastFrame: 30
+      lastFrame: 40
       wrapMode: 1
       orientationOffsetY: 0
       level: 0

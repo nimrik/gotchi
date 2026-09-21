@@ -23,8 +23,6 @@ namespace Gotchi.Systems
 
     public class NotificationScheduler
     {
-        public const float ReminderThreshold = 30f;
-
         public TimeSpan QuietStart = new TimeSpan(21, 0, 0);
         public TimeSpan QuietEnd = new TimeSpan(9, 0, 0);
 
@@ -52,35 +50,16 @@ namespace Gotchi.Systems
             return day + QuietEnd;
         }
 
-        public void ScheduleCareReminders(NeedsSystem needs, AutomationSystem automation, string petName)
+        public void CancelAll() => _channel.CancelAll();   // the player switched reminders off in Settings
+
+        // One gentle reminder: the cat is rested and ready again. Nothing decays while the player is away, so there
+        // is nothing to nag about; this only says that health and mana are back. Skipped when they already are.
+        public void ScheduleReadyReminder(double secondsUntilRested, string petName)
         {
             _channel.CancelAll();
-            DateTime now = _clock.LocalNow;
-
-            foreach (NeedType need in Enum.GetValues(typeof(NeedType)))
-            {
-                float value = needs.Get(need);
-                if (value <= ReminderThreshold) continue;
-
-                float ratePerHour = NeedsSystem.BaseDecayPerHour(need) * automation.GetDecayMultiplier(need);
-                if (ratePerHour <= 0f) continue;
-
-                double hoursUntilLow = (value - ReminderThreshold) / ratePerHour;
-                DateTime fireAt = ClampOutsideQuietHours(now.AddHours(hoursUntilLow));
-                _channel.Schedule($"care_{need}", $"{petName} says hi", BodyFor(need, petName), fireAt);
-            }
-        }
-
-        // Deliberately gentle copy — no "your pet is suffering" framing (02-game-design.md).
-        private static string BodyFor(NeedType need, string petName)
-        {
-            switch (need)
-            {
-                case NeedType.Hunger: return $"{petName} could go for a snack whenever you're free.";
-                case NeedType.Hygiene: return $"{petName} is thinking about a bubble bath.";
-                case NeedType.Energy: return $"{petName} is getting a little sleepy.";
-                default: return $"{petName} would love to play when you have a minute.";
-            }
+            if (secondsUntilRested < 60d) return;
+            DateTime fireAt = ClampOutsideQuietHours(_clock.LocalNow.AddSeconds(secondsUntilRested));
+            _channel.Schedule("rested", $"{petName} is rested", $"{petName} has its health and mana back, and is ready for the Battle Club whenever you are.", fireAt);
         }
     }
 }

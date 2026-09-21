@@ -1,69 +1,59 @@
 # Gotchi — Vision
 
-Status: draft v0.1 — decisions captured from early planning conversations, revisit as the project evolves.
+Status: v0.2 (2026-09-21). Rewritten after the game was refocused on battles.
 
-## Elevator pitch
+## Pitch
 
-A cute, kawaii virtual pet you raise and grow — built with a genuinely premium pixel-art/3D visual style
-(think Celeste-inspired pixel-art world with a 3D creature at its center), instead of the cluttered,
-low-effort look common in the current virtual pet market.
+A cute cat you take in, build into a fighter and take up a ladder of turn-based battles, with the look of a
+well-made handheld RPG instead of the cluttered look common on the store. It keeps the heart of a virtual pet
+(one animal that is yours, that you feed, groom and let rest) and gives it something to be good at.
 
-## Why this, why now
+## Why this
 
-The virtual pet genre is active but visually and mechanically shallow — most competitors (Pou, My Tamagotchi
-Forever, Bubbu, Moy) are 3D-cartoon or flat-vector, ad-heavy, and the pet itself barely changes once you've
-filled its meters. Reviewers of the genre explicitly call this out as the category's biggest weakness.
+Virtual pet games are active on the store but shallow: once the meters are full the pet has nothing to do, and
+most of them lean on ads and guilt ("your pet is starving"). Monster battlers have depth but hand the player a
+hundred creatures and no attachment to any of them. Gotchi sits between the two: **one animal, a real build,
+a ladder to climb, and nothing that punishes the player for having a life.**
 
-Our opening: a genuinely well-art-directed pixel/3D hybrid pet, with real long-term depth (skill-tree driven
-evolution, not just meters), aimed squarely at kids 5–13 (primarily girls) who are underserved by apps that
-look "trashy" to a design-conscious audience (and to parents evaluating the app).
+## Who it is for
 
-## Target audience (revised)
+- Tweens, teens and nostalgic young adults who like cute, kawaii things and grew up on handheld RPGs. Not
+  primarily children under 13.
+- This is a real positioning, in tone, store copy and content, and not a label. Apple calculates the age rating
+  from a content questionnaire and can treat an app as "for kids" whatever it declares (Guideline 1.3). A
+  battler with mild cartoon fights supports an older rating more honestly than a pure pet game did. See
+  `07-apple-compliance-questionnaire.md`.
+- Pet games draw younger players whatever the marketing says, so the defaults stay conservative: the only data
+  asked for is an age band, real-money items are hidden for under-13, there are no ads, no chat, and every
+  purchase asks for confirmation.
 
-Shifted deliberately away from a "5–13, mostly girls" framing toward a broader audience — this is a real
-repositioning (art tone, marketing, content), not just a label change on the App Store rating.
-
-- Primary: tweens, teens, and nostalgia-driven young adults who like cute/kawaii aesthetics — not
-  specifically children under 13.
-- The kawaii/pixel-art visual identity stays; what changes is who we're designing and marketing *for*,
-  so the app's actual content and store presence genuinely support a 13+ rating rather than fighting it.
-- Rationale: Apple's age rating is calculated from a content questionnaire, and Apple's Guideline 1.3 can
-  still treat an app as "for kids" based on its actual design/marketing regardless of a self-declared
-  rating — so this only works if the repositioning is genuine (tone, marketing copy, store screenshots,
-  content) and not just a settings change. See `07-apple-compliance-questionnaire.md`.
-- Reality check to keep in mind: virtual pet games organically attract younger players regardless of
-  marketing intent. This doesn't have to block the repositioning, but it means we should keep sensible
-  baseline practices (age-neutral advertising if any is added later, no targeted ads to anyone who
-  self-identifies as under 13, minimal data collection) rather than assuming a 13+ rating removes all
-  child-safety considerations in practice.
-- Parents are no longer the primary discoverability gatekeeper in the same way a Kids Category app would
-  need — but a trustworthy, non-manipulative monetization approach is still worth keeping regardless.
-
-**Open decision:** exact age floor/ceiling for marketing purposes (e.g. "9+", "13+", "all ages but styled
-for teens+") — worth pinning down before writing store copy or finalizing character/tone direction.
-
-## Differentiation vs. market
+## What sets it apart
 
 | Them | Us |
 |---|---|
-| Cartoon/flat 3D art, generic | Pixel-art world (Celeste-inspired) + stylized 3D creature |
-| Pet plateaus after basic stats are filled | Long-term skill-tree driven evolution, branching creature forms |
-| Ad-heavy, third-party trackers common | Free + IAP, minimal data collection by design |
-| Simple meters, no strategy layer | Needs → automation → skill-tree strategy layer (Clash of Clans-style scaling) |
-| Purely entertainment, no learning value | Two skill-tree branches (Social, Science) are genuine edutainment — language and general-knowledge mini-games woven into progression, not a bolted-on "educational mode" |
+| Generic cartoon 3D or flat vector art | One hand-built chibi cat with flat colours and an ink outline, in a calm room, framed by a handheld-RPG box UI |
+| The pet plateaus once its meters are full | A build to grow (style, stats, moves, charm), a league ladder, daily quests |
+| Meters that drain while you are away, guilt notifications | Nothing decays, the cat never dies, one reminder at most: "rested and ready" |
+| Ads, trackers, loot boxes | Free with fixed-price purchases; hearts buy looks, never power; minimal data |
+| A hundred creatures, none of them yours | One animal with a name, a story told in chapters, and a face |
 
-## Team & scope reality check
+## The team
 
-- First game for both of us; treat this as a real learning project as well as a serious release attempt.
-- Two-person team (you + one colleague on implementation).
-- Confirmed capacity: side-project pace (a few hours/week each), both beginners at Unity/C#. The roadmap
-  should build in a real learning-curve buffer, especially through Phase 1.
-- We want to publish and monetize seriously — not just a portfolio piece — which means compliance,
-  polish, and store requirements matter from day one, not as an afterthought.
+- Two people, side-project pace (a few hours a week each), first game for both, beginners at Unity and C#.
+- The aim is a real release that earns money, so compliance, polish and store rules count from the start.
+- Consequence for every plan: small scope, one mode at a time, systems before content, mocks before servers.
 
-## Open questions (revisit as design firms up)
+## Open questions
 
-- Exact age-band targeting for Apple's Kids Category (bands cap at 11; audience goes to 13) — see
-  `06-monetization-compliance.md`.
-- Whether "kawaii" leans more cute-Japanese-style or more Western-cute — affects art direction and
-  reference gathering.
+- The exact age wording for the store ("9+", "13+", "all ages, styled for teens") once the rating questionnaire
+  has been filled in honestly.
+- How much "pet" the battler keeps in the long run: is the camp enough, or does the home need more to do that
+  is not about the next fight?
+- Whether kawaii leans Japanese-cute or Western-cute in store art and later characters.
+
+## History
+
+Until 2026-09-21 the pitch was a virtual pet with four draining needs, a seven-branch skill tree with a
+mini-game per branch (two of them educational quizzes), thirteen species and forty-five emotion states. The
+mini-games, the needs, the emotion system and the species picker were removed in favour of one cat and one
+battle system done well. The old text is in git history.

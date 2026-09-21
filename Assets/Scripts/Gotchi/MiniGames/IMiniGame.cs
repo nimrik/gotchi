@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Gotchi.Data;
 using UnityEngine;
 
@@ -14,6 +15,8 @@ namespace Gotchi.MiniGames
         public string Summary;
         public int Tier;
         public float RewardMultiplier;
+        public List<string> Lines;   // extra result lines (rating, streak, quests, promotion, area cleared)
+        public bool NoReplay;        // the results card offers Continue instead of another round (fights in the Wild)
     }
 
     // Progressive difficulty: grows with the branch's evolution stage and the character level; rewards scale with it.
@@ -76,42 +79,15 @@ namespace Gotchi.MiniGames
 
     public static class MiniGameRegistry
     {
+        // One game: the battle. It is staged for the Battle Club (ranked) and for the Wild (campaign); the other
+        // mini-games (Bubble Dash, Word Pals, Curious Minds, Bloom Sort, Trail Memory, Meadow Hunt) were removed on
+        // 2026-09-21 when the game was refocused on battles.
         public static readonly MiniGameInfo[] All =
         {
             new MiniGameInfo
             {
-                Branch = SkillBranch.Sport, DisplayName = "Bubble Dash", Tagline = "Tap the bubbles before they pop.",
-                Implemented = true, Attach = go => go.AddComponent<TapReflexMiniGame>(),
-            },
-            new MiniGameInfo
-            {
-                Branch = SkillBranch.Social, DisplayName = "Word Pals", Tagline = "Language quiz.",
-                Implemented = true, Attach = go => { var q = go.AddComponent<QuizMiniGame>(); q.Configure(SkillBranch.Social, QuizBank.Language); return q; },
-            },
-            new MiniGameInfo
-            {
-                Branch = SkillBranch.Science, DisplayName = "Curious Minds", Tagline = "General knowledge quiz.",
-                Implemented = true, Attach = go => { var q = go.AddComponent<QuizMiniGame>(); q.Configure(SkillBranch.Science, QuizBank.Science); return q; },
-            },
-            new MiniGameInfo
-            {
-                Branch = SkillBranch.Hunter, DisplayName = "Meadow Hunt", Tagline = "Catch the critters across three waves.",
-                Implemented = true, Attach = go => go.AddComponent<HuntMiniGame>(),
-            },
-            new MiniGameInfo
-            {
-                Branch = SkillBranch.Nature, DisplayName = "Bloom Sort", Tagline = "Plant each seed in its pot before it wilts.",
-                Implemented = true, Attach = go => go.AddComponent<BloomMiniGame>(),
-            },
-            new MiniGameInfo
-            {
-                Branch = SkillBranch.PvP, DisplayName = "Battle", Tagline = "Turn-based battle. Pick your moves!",
+                Branch = SkillBranch.PvP, DisplayName = "Battle", Tagline = "Turn-based battles. Train, pick your moves, climb the leagues, explore the Wild.",
                 Implemented = true, Attach = go => go.AddComponent<BattleMiniGame>(),
-            },
-            new MiniGameInfo
-            {
-                Branch = SkillBranch.ExplorerAdventure, DisplayName = "Trail Memory", Tagline = "Watch the route, then repeat it.",
-                Implemented = true, Attach = go => go.AddComponent<TrailMiniGame>(),
             },
         };
 

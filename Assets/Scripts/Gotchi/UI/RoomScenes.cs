@@ -71,28 +71,80 @@ namespace Gotchi.UI
 
         // ---------- scenes ----------
 
-        private static Sprite _cozy;
+        // ---------- the default room: nearly empty, and the window tells the time ----------
+        // Asked for 2026-09-21: the lofi study (desk, laptop, lamp, posters, shelf, plant, string lights) pulled the eye
+        // away from the pet. What is left is a wall, a floor and one window; the sky in it follows the device's local
+        // time (dawn, day, dusk, night, with the sun or the moon on its arc) and the wall takes a light or dark tone
+        // with it. Repainted when the ten-minute bucket changes (RoomView.ApplyRoom, polled by HUDController).
 
-        // The default room is a lofi study at dusk (the "lofi hip hop radio" look): a big window onto a purple
-        // night city, a desk with a glowing laptop, mug and lamp, headphones, string lights, posters, plants.
-        // Painted once by ScenePainter; only the string lights and a few stars twinkle.
+        public static Func<DateTime> LocalNow = () => DateTime.Now;
+        public static int CozyBucket(DateTime time) => time.Hour * 6 + time.Minute / 10;
+
+        public struct CozyPalette
+        {
+            public Color SkyTop, SkyBottom, WallTop, WallBottom, FloorTop, FloorBottom, Frame, Backdrop, Glow;
+            public float Daylight;   // 0 night … 1 full day
+        }
+
+        private static CozyPalette Pal(string skyTop, string skyBottom, string wallTop, string wallBottom, string floorTop, string floorBottom, string frame, string backdrop, string glow, float daylight) =>
+            new CozyPalette
+            {
+                SkyTop = UIFactory.Hex(skyTop), SkyBottom = UIFactory.Hex(skyBottom), WallTop = UIFactory.Hex(wallTop), WallBottom = UIFactory.Hex(wallBottom),
+                FloorTop = UIFactory.Hex(floorTop), FloorBottom = UIFactory.Hex(floorBottom), Frame = UIFactory.Hex(frame),
+                Backdrop = UIFactory.Hex(backdrop), Glow = UIFactory.Hex(glow), Daylight = daylight,
+            };
+
+        private static readonly CozyPalette NightPal = Pal("1B1840", "4A3F7A", "4E4374", "6A5A8E", "7C5B48", "5E4334", "3A3158", "574B7E", "6E5C90", 0f);
+        private static readonly CozyPalette DawnPal  = Pal("7FA8DD", "FFC7A6", "BFAED4", "DCCBE2", "A98268", "86624C", "8F7FA6", "CDBBDD", "FFD9C2", 0.55f);
+        private static readonly CozyPalette DayPal   = Pal("6FBBF2", "D3EEFF", "F1E4D6", "FBF1E6", "C9A07E", "A98062", "F7EEE4", "F3E6DA", "FFE9D6", 1f);
+        private static readonly CozyPalette DuskPal  = Pal("463B86", "F0A27C", "8C789F", "B59AB6", "94705A", "72523F", "5E4E7E", "8C789F", "C9A0B0", 0.35f);
+        private static readonly float[] KeyHours = { 0f, 5f, 6.5f, 8.5f, 16.5f, 18.5f, 20.5f, 24f };
+        private static readonly CozyPalette[] KeyPals = { NightPal, NightPal, DawnPal, DayPal, DayPal, DuskPal, NightPal, NightPal };
+
+        public static CozyPalette CozyPaletteAt(DateTime time)
+        {
+            float hour = time.Hour + time.Minute / 60f;
+            for (int i = 0; i < KeyHours.Length - 1; i++)
+            {
+                if (hour > KeyHours[i + 1]) continue;
+                float t = Mathf.InverseLerp(KeyHours[i], KeyHours[i + 1], hour);
+                CozyPalette a = KeyPals[i], b = KeyPals[i + 1];
+                return new CozyPalette
+                {
+                    SkyTop = Color.Lerp(a.SkyTop, b.SkyTop, t), SkyBottom = Color.Lerp(a.SkyBottom, b.SkyBottom, t),
+                    WallTop = Color.Lerp(a.WallTop, b.WallTop, t), WallBottom = Color.Lerp(a.WallBottom, b.WallBottom, t),
+                    FloorTop = Color.Lerp(a.FloorTop, b.FloorTop, t), FloorBottom = Color.Lerp(a.FloorBottom, b.FloorBottom, t),
+                    Frame = Color.Lerp(a.Frame, b.Frame, t), Backdrop = Color.Lerp(a.Backdrop, b.Backdrop, t), Glow = Color.Lerp(a.Glow, b.Glow, t),
+                    Daylight = Mathf.Lerp(a.Daylight, b.Daylight, t),
+                };
+            }
+            return NightPal;
+        }
+
+        private static Sprite _cozy;
+        private static int _cozyBucket = -1;
+
+        // Window rectangle in the 1080×1920 design (y up): centred above the pet, clear of the header.
+        private const float WinW = 500f, WinH = 430f, WinX = (1080f - WinW) * 0.5f, WinY = 1190f;
+
         private static void BuildCozy(RectTransform layer, MonoBehaviour host)
         {
+            DateTime now = LocalNow();
+            int bucket = CozyBucket(now);
+            if (_cozy == null || bucket != _cozyBucket)
+            {
+                if (_cozy != null) { UnityEngine.Object.Destroy(_cozy.texture); UnityEngine.Object.Destroy(_cozy); }
+                _cozy = PaintCozy(now);
+                _cozyBucket = bucket;
+            }
             var art = UIFactory.CreatePanel("Art", layer, Color.white);
-            art.sprite = _cozy ?? (_cozy = PaintCozy());
+            art.sprite = _cozy;
             art.type = Image.Type.Simple;
             art.preserveAspect = false;
             UIFactory.Fill(art.rectTransform);
 
-            for (int i = 0; i < 9; i++)
-            {
-                float t = (i + 0.5f) / 9f;
-                float y = StringY(t * 1080f) / 1920f;
-                var bulb = UIFactory.CreateCircle("Bulb", layer, i % 3 == 0 ? UIFactory.Hex("FFE9A8") : i % 3 == 1 ? UIFactory.Hex("FFC9A0") : UIFactory.Hex("FFD6E0"), 18f);
-                UIFactory.Place(bulb.rectTransform, new Vector2(t, y), new Vector2(t, y), new Vector2(-9f, -22f), new Vector2(9f, -4f));
-                host.StartCoroutine(Twinkle(bulb, 1.6f + i * 0.23f));
-            }
-            float[] sx = { 0.14f, 0.3f, 0.42f, 0.22f }, sy = { 0.86f, 0.9f, 0.84f, 0.8f };
+            if (CozyPaletteAt(now).Daylight > 0.25f) return;
+            float[] sx = { 0.34f, 0.47f, 0.62f, 0.69f }, sy = { 0.80f, 0.74f, 0.82f, 0.70f };   // a few live stars inside the window
             for (int i = 0; i < sx.Length; i++)
             {
                 var star = UIFactory.CreateCircle("Star", layer, Color.white, 6f);
@@ -101,164 +153,74 @@ namespace Gotchi.UI
             }
         }
 
-        // Height of the string-light cable (canvas units) at x — a shallow sag between the top corners.
-        private static float StringY(float x)
-        {
-            float u = x / 1080f - 0.5f;
-            return 1770f - (0.25f - u * u) * 160f;
-        }
-
         // Full-screen design (1080×1920, y up). Floor line at 0.444 of the height so the rug and the pet stand on it.
-        private static Sprite PaintCozy()
+        private static Sprite PaintCozy(DateTime now)
         {
             const float W = 1080f, H = 1920f, FloorY = 852f;
-            var p = new ScenePainter(W, H, 0.7f, UIFactory.Hex("574B7E"));
-            Color H_(string hex) => UIFactory.Hex(hex);
-            Color A(string hex, float a) { var c = UIFactory.Hex(hex); c.a = a; return c; }
+            CozyPalette pal = CozyPaletteAt(now);
+            var p = new ScenePainter(W, H, 0.6f, pal.WallBottom);
+            Color A(Color c, float a) { c.a = a; return c; }
+            float hour = now.Hour + now.Minute / 60f;
+            float dark = 1f - pal.Daylight;
 
-            // Wall: dusky purple, warmer low on the left where the lamp is; skirting; dark wood floor.
-            p.RoundedRect(0f, FloorY, W, H - FloorY, 0f, H_("4E4374"), H_("6A5A8E"));
-            p.Circle(230f, 1080f, 420f, A("FFB070", 0.22f), 260f);
-            p.RoundedRect(0f, FloorY - 2f, W, 24f, 0f, H_("3F3560"), H_("352C52"));
-            p.Rect(0f, FloorY + 20f, W, 3f, A("FFFFFF", 0.14f));
-            p.RoundedRect(0f, 0f, W, FloorY, 0f, H_("8A6650"), H_("6A4C3C"));
-            for (int i = 1; i < 17; i++)
+            // Wall, skirting board, plain floor with a few faint board lines.
+            p.RoundedRect(0f, FloorY, W, H - FloorY, 0f, pal.WallTop, pal.WallBottom);
+            p.RoundedRect(0f, FloorY - 2f, W, 22f, 0f, Color.Lerp(pal.WallBottom, Color.black, 0.16f), Color.Lerp(pal.WallBottom, Color.black, 0.24f));
+            p.RoundedRect(0f, 0f, W, FloorY, 0f, pal.FloorTop, pal.FloorBottom);
+            for (int i = 1; i < 6; i++) p.Line(0f, FloorY - i * 150f, W, FloorY - i * 150f, 3f, A(Color.black, 0.06f));
+
+            // The window: frame, sky, then whatever the hour puts in it.
+            p.Shadow(WinX + 6f, WinY - 10f, WinW, WinH, 18f, 26f, 0.18f);
+            p.RoundedRect(WinX - 16f, WinY - 16f, WinW + 32f, WinH + 32f, 22f, pal.Frame, Color.Lerp(pal.Frame, Color.black, 0.12f));
+            p.RoundedRect(WinX, WinY, WinW, WinH, 10f, pal.SkyTop, pal.SkyBottom);
+            p.SetClip(WinX, WinY, WinW, WinH);
+            if (dark > 0.35f)
             {
-                float y = FloorY - i * 50f;
-                p.Line(0f, y, W, y, 3f, A("4E3628", 0.55f));
-                for (int j = 0; j < 5; j++)
+                float starAlpha = 0.85f * Mathf.InverseLerp(0.35f, 0.85f, dark);
+                for (int i = 0; i < 22; i++)
                 {
-                    float x = (j * 236f + (i % 2) * 118f) % W;
-                    p.Line(x, y, x, y + 50f, 3f, A("4E3628", 0.4f));
+                    float x = WinX + 18f + Frac(i * 0.618f + 0.11f) * (WinW - 36f), y = WinY + WinH * 0.32f + Frac(i * i * 0.137f + i * 0.291f) * WinH * 0.64f;
+                    p.Circle(x, y, 2f + (i % 3) * 1.1f, A(Color.white, starAlpha));
                 }
             }
-            p.Ellipse(230f, FloorY - 40f, 300f, 80f, 0f, A("FFB070", 0.16f), 60f);   // lamp light pooling on the floor
-
-            // Window onto the city: frame, dusk sky, stars, moon, skyline with lit windows, cross bars, sill.
-            float wx = 96f, wy = 1120f, ww = 470f, wh = 500f;
-            p.Shadow(wx + 8f, wy - 10f, ww, wh, 20f, 30f, 0.25f);
-            p.RoundedRect(wx - 16f, wy - 16f, ww + 32f, wh + 32f, 22f, H_("3A3158"), H_("2E2748"));
-            p.RoundedRect(wx, wy, ww, wh, 12f, H_("241F45"), H_("F0A27C"));
-            p.SetClip(wx, wy, ww, wh);
-            p.RoundedRect(wx, wy + wh * 0.35f, ww, wh * 0.65f, 0f, H_("241F45"), H_("7A4E8C"));
-            p.RoundedRect(wx, wy, ww, wh * 0.36f, 0f, H_("7A4E8C"), H_("F0A27C"));
-            for (int i = 0; i < 26; i++)
+            if (hour >= 5.5f && hour <= 20.5f)
             {
-                float sx = wx + 20f + Frac(i * 0.618f + 0.11f) * (ww - 40f), sy = wy + wh * 0.5f + Frac(i * i * 0.137f + i * 0.291f) * wh * 0.48f;
-                p.Circle(sx, sy, 2.2f + (i % 3) * 1.2f, A("FFFFFF", 0.85f));
+                float t = Mathf.InverseLerp(5.5f, 20.5f, hour), lift = Mathf.Sin(t * Mathf.PI);
+                float x = WinX + WinW * (0.10f + 0.80f * t), y = WinY + WinH * (-0.10f + 0.92f * lift);
+                Color sun = Color.Lerp(UIFactory.Hex("FFB070"), UIFactory.Hex("FFE9A8"), lift);
+                p.Circle(x, y, 84f, A(sun, 0.28f), 60f);
+                p.Circle(x, y, 36f, sun);
             }
-            p.Circle(wx + 360f, wy + 400f, 46f, A("FFF1B8", 0.35f), 40f);
-            p.Circle(wx + 360f, wy + 400f, 34f, H_("FFF1B8"));
-            p.Circle(wx + 378f, wy + 410f, 30f, H_("2E2750"));
-            float[] bw = { 46f, 70f, 38f, 90f, 54f, 64f, 42f, 78f, 50f };
-            float[] bh = { 120f, 190f, 90f, 240f, 150f, 200f, 110f, 170f, 130f };
-            float bx = wx - 10f;
-            for (int i = 0; i < bw.Length; i++)
+            if (hour >= 19f || hour <= 7f)
             {
-                p.Rect(bx, wy, bw[i], bh[i], H_("221C40"));
-                for (float yy = wy + 14f; yy < wy + bh[i] - 12f; yy += 22f)
-                    for (float xx = bx + 8f; xx < bx + bw[i] - 10f; xx += 16f)
-                        if (Frac((xx * 7.13f + yy * 3.71f) * 0.01f) > 0.45f) p.Rect(xx, yy, 7f, 10f, A("FFE08A", 0.9f));
-                bx += bw[i] + 6f;
+                float t = hour >= 19f ? (hour - 19f) / 12f : (hour + 5f) / 12f, lift = Mathf.Sin(t * Mathf.PI);
+                float x = WinX + WinW * (0.12f + 0.76f * t), y = WinY + WinH * (0.10f + 0.72f * lift);
+                float moonAlpha = Mathf.InverseLerp(0.2f, 0.7f, dark);
+                p.Circle(x, y, 50f, A(UIFactory.Hex("FFF1B8"), 0.30f * moonAlpha), 40f);
+                p.Circle(x, y, 32f, A(UIFactory.Hex("FFF1B8"), moonAlpha));
+                p.Circle(x + 17f, y + 9f, 28f, A(Color.Lerp(pal.SkyTop, pal.SkyBottom, 0.35f), moonAlpha));   // the bite that makes it a crescent
             }
+            if (pal.Daylight > 0.5f)
+            {
+                float cloudAlpha = 0.92f * Mathf.InverseLerp(0.5f, 0.9f, pal.Daylight);
+                p.Ellipse(WinX + 130f, WinY + 300f, 62f, 26f, 0f, A(Color.white, cloudAlpha), 6f);
+                p.Ellipse(WinX + 176f, WinY + 316f, 46f, 24f, 0f, A(Color.white, cloudAlpha), 6f);
+                p.Ellipse(WinX + 96f, WinY + 290f, 38f, 18f, 0f, A(Color.white, cloudAlpha), 6f);
+            }
+            Color hill = Color.Lerp(Color.Lerp(pal.SkyBottom, UIFactory.Hex("2A2350"), 0.55f), UIFactory.Hex("9FD6A8"), pal.Daylight * 0.75f);
+            p.Ellipse(WinX + 150f, WinY - 60f, 330f, 150f, 0f, hill);
+            p.Ellipse(WinX + 420f, WinY - 80f, 300f, 150f, 0f, Color.Lerp(hill, Color.black, 0.10f));
             p.ClearClip();
-            p.Rect(wx + ww * 0.5f - 5f, wy, 10f, wh, H_("3A3158"));
-            p.Rect(wx, wy + wh * 0.55f, ww, 10f, H_("3A3158"));
-            p.Shadow(wx - 30f, wy - 40f, ww + 60f, 22f, 6f, 14f, 0.25f);
-            p.RoundedRect(wx - 36f, wy - 34f, ww + 72f, 22f, 6f, H_("6E5A8C"), H_("4E4374"));
 
-            // Desk under the window: wooden top, legs, and everything on it.
-            float dy = FloorY + 150f;
-            p.ShadowEllipse(340f, FloorY + 6f, 320f, 26f, 26f, 0.25f);
-            p.Rect(70f, FloorY, 18f, 150f, H_("5C4234"));
-            p.Rect(590f, FloorY, 18f, 150f, H_("5C4234"));
-            p.RoundedRect(40f, dy - 8f, 600f, 30f, 8f, H_("B98A6A"), H_("8E6248"));
-            p.Rect(40f, dy + 16f, 600f, 4f, A("FFFFFF", 0.22f));
-            // Laptop with a glowing screen.
-            p.Circle(360f, dy + 100f, 150f, A("9FD7FF", 0.16f), 110f);
-            p.RoundedRect(250f, dy + 22f, 230f, 14f, 6f, H_("D9D6E6"), H_("B7B2CC"));
-            p.RoundedRect(268f, dy + 34f, 190f, 130f, 8f, H_("2B2750"), H_("221C40"));
-            p.RoundedRect(278f, dy + 44f, 170f, 110f, 5f, H_("BFE6FF"), H_("7FC2F5"));
-            p.Rect(292f, dy + 120f, 90f, 6f, A("FFFFFF", 0.6f));
-            p.Rect(292f, dy + 100f, 130f, 6f, A("FFFFFF", 0.45f));
-            p.Rect(292f, dy + 80f, 60f, 6f, A("FFFFFF", 0.45f));
-            // Mug with steam.
-            p.RoundedRect(510f, dy + 22f, 54f, 62f, 10f, H_("FFE1EA"), H_("F5B8C8"));
-            p.Circle(572f, dy + 52f, 16f, H_("F5B8C8"));
-            p.Circle(572f, dy + 52f, 8f, H_("6A5A8E"));
-            p.Line(524f, dy + 96f, 530f, dy + 130f, 4f, A("FFFFFF", 0.35f), 3f);
-            p.Line(546f, dy + 96f, 540f, dy + 134f, 4f, A("FFFFFF", 0.3f), 3f);
-            // Desk lamp on the left with a warm cone of light.
-            p.Ellipse(150f, dy + 24f, 44f, 10f, 0f, H_("3A3158"), H_("2E2748"));
-            p.Line(150f, dy + 26f, 150f, dy + 150f, 8f, H_("3A3158"));
-            p.Line(150f, dy + 150f, 200f, dy + 190f, 8f, H_("3A3158"));
-            p.Ellipse(230f, dy + 120f, 120f, 70f, -25f, A("FFC985", 0.28f), 40f);
-            p.RoundedRect(176f, dy + 168f, 82f, 46f, 14f, H_("FFB59E"), H_("F2997F"));
-            p.Circle(217f, dy + 172f, 22f, A("FFF1C2", 0.9f), 8f);
-            // Books and headphones on the right.
-            p.RoundedRect(456f, dy + 22f, 90f, 18f, 4f, H_("CDBBFF"), H_("B39DFF"));
-            p.RoundedRect(462f, dy + 40f, 78f, 16f, 4f, H_("A8E6CF"), H_("8CD3B5"));
-            p.RoundedRect(470f, dy + 56f, 64f, 14f, 4f, H_("FFD98E"), H_("F2C14E"));
-            p.Circle(110f, dy + 44f, 24f, H_("3A3158"));
-            p.Circle(174f, dy + 44f, 24f, H_("3A3158"));
-            p.Line(112f, dy + 62f, 142f, dy + 92f, 8f, H_("3A3158"));
-            p.Line(142f, dy + 92f, 172f, dy + 62f, 8f, H_("3A3158"));
-            p.Circle(110f, dy + 44f, 12f, H_("FFB59E"));
-            p.Circle(174f, dy + 44f, 12f, H_("FFB59E"));
+            // Cross bars and sill.
+            p.Rect(WinX + WinW * 0.5f - 5f, WinY, 10f, WinH, pal.Frame);
+            p.Rect(WinX, WinY + WinH * 0.5f - 5f, WinW, 10f, pal.Frame);
+            p.Shadow(WinX - 28f, WinY - 40f, WinW + 56f, 22f, 6f, 14f, 0.20f);
+            p.RoundedRect(WinX - 34f, WinY - 34f, WinW + 68f, 22f, 6f, Color.Lerp(pal.Frame, Color.white, 0.12f), Color.Lerp(pal.Frame, Color.black, 0.10f));
 
-            // Posters and a shelf with a radio on the right wall.
-            p.Shadow(700f, 1360f, 190f, 250f, 10f, 20f, 0.25f);
-            p.RoundedRect(694f, 1366f, 190f, 250f, 10f, H_("F7EEE4"), H_("E8DCCF"));
-            p.RoundedRect(708f, 1380f, 162f, 222f, 6f, H_("7A4E8C"), H_("F0A27C"));
-            p.SetClip(708f, 1380f, 162f, 222f);
-            p.Ellipse(760f, 1400f, 90f, 70f, 0f, H_("3A3158"), H_("2E2748"));
-            p.Ellipse(850f, 1390f, 80f, 90f, 0f, H_("2E2748"), H_("241F45"));
-            p.Circle(830f, 1560f, 20f, H_("FFF1B8"));
-            p.ClearClip();
-            p.Shadow(900f, 1170f, 150f, 200f, 10f, 18f, 0.25f);
-            p.RoundedRect(896f, 1176f, 150f, 200f, 10f, H_("F7EEE4"), H_("E8DCCF"));
-            p.RoundedRect(908f, 1188f, 126f, 176f, 6f, H_("FFD6DF"), H_("FF9EBB"));
-            p.Circle(958f, 1290f, 26f, H_("FFFFFF"));
-            p.Circle(984f, 1290f, 26f, H_("FFFFFF"));
-            p.Ellipse(971f, 1262f, 44f, 34f, 0f, H_("FFFFFF"));
-            p.Shadow(700f, 1116f, 350f, 18f, 6f, 16f, 0.28f);
-            p.RoundedRect(694f, 1122f, 350f, 18f, 6f, H_("B98A6A"), H_("8E6248"));
-            p.RoundedRect(720f, 1140f, 150f, 80f, 12f, H_("D9C6B0"), H_("B8A08A"));
-            p.Circle(760f, 1180f, 24f, H_("3A3158"));
-            p.Circle(760f, 1180f, 10f, H_("6A5A8E"));
-            p.RoundedRect(800f, 1160f, 56f, 8f, 4f, H_("3A3158"));
-            p.RoundedRect(800f, 1178f, 56f, 8f, 4f, H_("3A3158"));
-            p.RoundedRect(800f, 1196f, 30f, 8f, 4f, H_("3A3158"));
-            p.RoundedRect(896f, 1140f, 40f, 34f, 10f, H_("FFB59E"), H_("F2997F"));
-            p.Ellipse(916f, 1196f, 12f, 26f, 0f, H_("7FCB97"), H_("5FAE7C"));
-            p.Ellipse(900f, 1188f, 10f, 20f, 30f, H_("7FCB97"), H_("5FAE7C"));
-            p.Ellipse(932f, 1188f, 10f, 20f, -30f, H_("7FCB97"), H_("5FAE7C"));
-
-            // Big plant on the right, darker leaves for the night room.
-            p.ShadowEllipse(900f, FloorY + 4f, 96f, 22f, 18f, 0.3f);
-            p.RoundedRect(838f, FloorY + 8f, 122f, 112f, 26f, H_("D08A70"), H_("A86A54"));
-            p.RoundedRect(830f, FloorY + 106f, 138f, 26f, 10f, H_("E0A088"), H_("D08A70"));
-            Color leafTop = H_("6FB98C"), leafBottom = H_("4E9A6E");
-            p.Ellipse(899f, FloorY + 235f, 36f, 96f, 0f, leafTop, leafBottom);
-            p.Ellipse(855f, FloorY + 205f, 32f, 84f, 30f, leafTop, leafBottom);
-            p.Ellipse(943f, FloorY + 205f, 32f, 84f, -30f, leafTop, leafBottom);
-            p.Ellipse(822f, FloorY + 162f, 28f, 66f, 58f, H_("5FAE7C"), H_("3F8A5E"));
-            p.Ellipse(976f, FloorY + 162f, 28f, 66f, -58f, H_("5FAE7C"), H_("3F8A5E"));
-
-            // String lights along the top: cable, then bulbs with a warm glow (the live bulbs twinkle over these).
-            float px = 0f, py = StringY(0f);
-            for (int i = 1; i <= 24; i++)
-            {
-                float x = i * (W / 24f), y = StringY(x);
-                p.Line(px, py, x, y, 3f, H_("3A3158"));
-                px = x; py = y;
-            }
-            for (int i = 0; i < 9; i++)
-            {
-                float x = (i + 0.5f) / 9f * W, y = StringY(x) - 12f;
-                p.Circle(x, y, 26f, A("FFE9A8", 0.28f), 22f);
-                p.RoundedRect(x - 4f, y + 6f, 8f, 10f, 2f, H_("3A3158"));
-            }
+            // Light from the window pooling on the floor: warm by day, faint and cool at night.
+            Color pool = Color.Lerp(UIFactory.Hex("BFC8FF"), UIFactory.Hex("FFE9C2"), pal.Daylight);
+            p.Ellipse(W * 0.5f, FloorY - 150f, 360f, 84f, 0f, A(pool, Mathf.Lerp(0.07f, 0.16f, pal.Daylight)), 70f);
 
             return p.ToSprite();
         }

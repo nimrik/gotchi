@@ -9,26 +9,26 @@ namespace Gotchi.Systems
     {
         public string Id;
         public string DisplayName;
-        public NeedType Need;
-        public float DecayMultiplier;
+        public string Description;       // what it does to its camp action
+        public CampAction Action;        // the camp action it improves (CampSystem reads this through Def(...).HelperId)
         public int SoftCost;
         public SkillBranch RequiredBranch;
         public int RequiredXp;
     }
 
-    // Phase 2: unlockable helpers that slow need decay. They reduce friction without
-    // removing the care loop — the pet still needs manual attention, just less often.
+    // Helpers: bought once, they make one camp action better for good (a buff that lasts five battles instead of
+    // three, a rest that gives back 60% instead of 40%). They used to slow the decay of a need; the needs are gone
+    // (2026-09-21), the ids stayed so old saves and the Starter Pack keep what they own. Unlocked with coins plus
+    // battle XP, one every 100 XP.
     public class AutomationSystem
     {
         public static readonly AutomationDefinition[] Catalog =
         {
-            new AutomationDefinition { Id = "auto_feeder",  DisplayName = "Snack Dispenser", Need = NeedType.Hunger,    DecayMultiplier = 0.6f, SoftCost = 150, RequiredBranch = SkillBranch.Science, RequiredXp = 50 },
-            new AutomationDefinition { Id = "auto_bath",    DisplayName = "Bubble Bath",     Need = NeedType.Hygiene,   DecayMultiplier = 0.6f, SoftCost = 150, RequiredBranch = SkillBranch.Nature, RequiredXp = 50 },
-            new AutomationDefinition { Id = "auto_bed",     DisplayName = "Cozy Nest",       Need = NeedType.Energy,    DecayMultiplier = 0.6f, SoftCost = 150, RequiredBranch = SkillBranch.Hunter,  RequiredXp = 50 },
-            new AutomationDefinition { Id = "auto_toybox",  DisplayName = "Toy Box",         Need = NeedType.Happiness, DecayMultiplier = 0.6f, SoftCost = 150, RequiredBranch = SkillBranch.Sport,   RequiredXp = 50 },
+            new AutomationDefinition { Id = "auto_feeder", DisplayName = "Snack Dispenser", Action = CampAction.Feed,  Description = "FEED lasts 5 battles instead of 3.",  SoftCost = 150, RequiredBranch = SkillBranch.PvP, RequiredXp = 100 },
+            new AutomationDefinition { Id = "auto_bath",   DisplayName = "Grooming Kit",    Action = CampAction.Groom, Description = "GROOM lasts 5 battles instead of 3.", SoftCost = 150, RequiredBranch = SkillBranch.PvP, RequiredXp = 200 },
+            new AutomationDefinition { Id = "auto_bed",    DisplayName = "Cozy Nest",       Action = CampAction.Rest,  Description = "REST gives back 60% health instead of 40%.", SoftCost = 150, RequiredBranch = SkillBranch.PvP, RequiredXp = 300 },
+            new AutomationDefinition { Id = "auto_toybox", DisplayName = "Quiet Corner",    Action = CampAction.Focus, Description = "FOCUS gives back 60% mana instead of 40%.",  SoftCost = 150, RequiredBranch = SkillBranch.PvP, RequiredXp = 400 },
         };
-
-        private const float MinMultiplier = 0.25f;
 
         private readonly PetSaveData _data;
 
@@ -55,15 +55,6 @@ namespace Gotchi.Systems
             _data.unlockedAutomationIds.Add(def.Id);
             OnUnlocked?.Invoke(def);
             return true;
-        }
-
-        public float GetDecayMultiplier(NeedType need)
-        {
-            float multiplier = 1f;
-            foreach (var def in Catalog)
-                if (def.Need == need && IsUnlocked(def.Id))
-                    multiplier *= def.DecayMultiplier;
-            return Math.Max(MinMultiplier, multiplier);
         }
 
         public IEnumerable<AutomationDefinition> Locked()

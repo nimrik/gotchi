@@ -1,154 +1,164 @@
 # Gotchi — UI Guide
 
-Status: v0.1 (2026-09-13). The rules every screen follows. The same tokens live in code
-(`UIFactory` — colours, `Spacing`, sprites, components), so build screens from those helpers and this
-document stays true. When you add a pattern, add it here in the same commit.
+Status: v0.2 (2026-09-21). The rules every screen follows. The same tokens live in code (`UI/UIFactory`), so
+build screens from those helpers and this guide stays true. When you add a pattern, add it here in the same
+commit.
 
 ## Principles
-- **One thing per block.** A card holds one idea (the pet, skills, care). No block competes with the pet.
-- **Icons carry actions, text carries information.** Controls are icon buttons with a short caption where
-  meaning isn't obvious; numbers and names are text.
-- **One accent.** Pink is the call-to-action colour. Need colours (coral/sky/lavender/pink) appear only on
-  need meters and care buttons; branch colours only inside the Skills/leaderboard lists.
-- **Same spacing everywhere.** Use the scale below; never eyeball a gap.
-- **Everything tappable moves.** Every button, chip, row or card that reacts to a tap has the press animation.
+
+- **The cat is the picture, the UI is the frame.** Nothing competes with it: the room is almost empty, boxes are
+  flat, and only the cat has depth and motion of its own.
+- **One box language.** Every container is the same handheld-RPG box: a dark outline, a light inner line, a flat
+  fill, a cut corner pixel. No drop shadows, no rounded cards.
+- **Numbers are shown.** Health, mana, XP, prices and costs are read as numbers, never hidden behind a vague bar.
+- **One block, one idea.** Status, battle menu, camp. A block never mixes two jobs.
+- **Everything tappable moves.** Every control has the press animation and shows ▶ while it is held.
+- **Never guilt.** No wording about suffering, no red alarms for staying away.
 
 ## Tokens (`UIFactory`)
+
 | Token | Value | Use |
 |---|---|---|
-| `Cream` | #FFF6EC | page background, panel cards |
-| `Peach` | #FFE1D0 | top gradient glow |
-| `Card` | white | content cards |
-| `Ink` | #4A3F55 | primary text, icons on light |
-| `Muted` | #9A8FA6 | secondary text |
-| `Pink` / `PinkDark` | #FF9EBB / #E86F96 | CTA buttons, active states / emphasis text |
-| `Coral` `Sky` `Lavender` `Butter` `Mint` | pastels | needs (Hunger/Hygiene/Energy/Happiness), rewards, nature |
-| `Shadow` | rgba(115,77,89,0.14) | card drop shadow (offset −10 down) |
+| `Cream` / `Peach` | #FFF6EC / #FFE1D0 | page backdrop and its top glow |
+| `Card` | white | boxes on the home screen, rows inside panels |
+| `PanelBlue` | #BCBFF5 | the fill of every panel |
+| `FrameDark` / `FrameLight` | #5E5E7E / #D8DCEC | the box outline and its inner line |
+| `MenuInk` | #4A4A56 | text on boxes and on blue |
+| `Ink` | #4A3F55 | body text, toasts, tooltips |
+| `Muted` | #9A8FA6 | secondary text on white only. Never on blue, and too faint under pixel 20 |
+| `MenuGrey` | #D4D5DF | options that are not chosen; the ROOKIE and NORMAL chips |
+| `Primary` | #F27FA5 | the one call-to-action colour, white label |
+| `Pink` / `PinkDark` | #FF9EBB / #E86F96 | accents, emphasis text |
+| `Coral` `Mint` `Lavender` | pastels | **the three styles: CLAW, FLUFF, TRICK**, everywhere a style shows |
+| `Butter` `Sky` | pastels | rewards, held or in-use rows, the Treat chip |
+| `PanelRows.Good` | #2E9E62 | "this is working for you": READY, a running buff |
+| HP | fill #FF5C7A, line #B8324E; low (a fifth or less) fill #E02D4F, line #8F1C33 | health bars and the HP label |
+| MP | fill #8E7BFF, line #5B49C9 | mana bars and the MP label |
 | `Scrim` | rgba(74,64,84,0.45) | behind panels |
 
-**Spacing** (`UIFactory.Spacing`): `Section` 24 between blocks · `List` 16 between rows · `Pad` 24 inside
-cards · `Gutter` 24 page margins. Canvas reference is 1080×1920; safe area applied at the root.
+**Spacing** (`UIFactory.Spacing`): `Section` 24 between blocks, `List` 16 between rows, `Pad` 24 inside boxes,
+`Gutter` 24 page margins. The canvas reference is 1080 × 1920 and the safe area is applied at the root.
 
-**Type** (all OFL): the pixel face is **Jersey 20** (`PixelFont`, drawn at ×1.1 via `PixelScale`) for headings,
-labels, buttons and every number — chosen because its digits stay distinct (Pixelify Sans drew 8 like S and 2
-like Z, so "Stage 8/8" and wallet amounts were unreadable; it is kept only as a fallback). Body copy is Varela
-Round. Page title 44–52 · card title 28–32 · body 24–26 · caption 18–22 · wallet amounts 30. Never wrap
-button labels.
-
-**Shape** (`UIFactory.Radius`): cards 32 · rows 24 · inputs 24 · everything else that is a control — buttons,
-chips, badges, tooltips, toasts, bars, sliders — is a **pill** (radius = half its height, kept exact by the
-`PillRadius` component; use `CreatePill`). Icon buttons and meters are circles. All shapes are anti-aliased
-and render at native resolution at any window size; only the character is pixel art (its sprite is resampled
-to a 112-px grid).
-
-**Button types** (`UIFactory.ButtonHeight`): Large 84 (primary actions, Back, onboarding CTAs) · Medium 64
-(row actions: Play / Buy / Unlock / Train) · Small 52 (chips like Cuddle). Primary = `Primary` pink with a **white** label; secondary = white with ink; row actions may use the row's
-context pastel with ink. Label colour is chosen by background luminance (`LabelColorFor`): white below 0.76,
-ink above. No hover/press colour tint — feedback is the scale animation. Disabled text buttons dim; disabled icon
-buttons keep their white disc and dim only the icon (45%) plus show a badge, so icons never blend into grey.
-Any hand-built control must call `LabelColorFor` for its label.
+**Type** (all under the Open Font License, in `Resources/Fonts`): the pixel face is **Jersey 20**, drawn at
+×1.1, for headings, labels, buttons and every number, chosen because its digits stay distinct. Body copy is
+**Varela Round**. Page title 44 to 52, box title 26 to 32, body 21 to 26, captions 18 to 22 (16 only for the
+HP and MP tags inside a battle box). **Anything the player reads to decide is pixel 20 or more**: the camp
+captions were 17 and could not be read. Button labels never wrap.
 
 ## Components
+
 | Component | Helper | Notes |
 |---|---|---|
-| Card | `CreateCard` | white, drop shadow, `Pad` inside; full column width |
-| Row | `CreateCard(cornerScale 0.8)` | flat (no shadow) inside panels and lists — shadows are only for top-level cards |
-| Panel | scrim + `CreateCard(Cream)` filled 28/28/100/120 | header 44 top, Back button bottom (72 tall, fitted to its label) |
-| Wallet box | `CreateWalletBox` | Sapphire money window: one white box, both currencies on one line — `[icon] 1439 COINS   [icon] 85 HEARTS` (pixel 34); 620×84 in the header, centred in the shop |
-| Primary button | `CreateButton(color: Pink)` | ink label, height 72–96 |
-| Secondary button | `CreateButton(color: Card)` | e.g. Back |
-| Icon button | `CreateIconButton` | round; 84 in header, 116 in dock; icon on white when the ring/background is coloured |
-| Ring meter | `NeedRingView` | radial ring = value; the button inside is white |
-| Pill / chip | `CreateRounded(cornerScale 0.7)` + text | sized to content (`Text.preferredWidth` + padding) |
-| Pill bar | `CreatePillBar` | 14–16 tall, fill via `anchorMax.x` |
-| Row | `CreateCard(cornerScale 0.8)` 92–120 tall | title 26–28 top-left, subtitle 21–22 below, action right (150×56) |
-| Toast | ink pill, white text, bottom | pop in, 2.2 s, fade |
-| Tooltip | ink pill above element | 5 s, e.g. low-need percentage |
-| Input | `CreateInputField` | 84 tall, placeholder muted |
+| Box | `CreateFrame`, `CreateCard`, `CreatePill` | one tinted 9-sliced sprite; the bevel tints with the fill |
+| Button | `CreateButton` | framed, upper-case pixel label, ▶ while held. Fill says the type: `Primary` pink, white, or a pastel. `FitToLabel` shrinks one-word buttons (Back) to their word |
+| Pressable cell | `MakePressable` + `PressFeedback` | for cells that are buttons without a frame of their own: battle doors, camp cells |
+| **Block bar** | `SegmentedBar.Create(name, parent, fill, line)` then `Set(value, max)` | health and mana, everywhere. See below |
+| Thin bar | `CreatePillBar` | XP and league progress: a 3 px outlined track with the fill inset |
+| Chip | `CreatePill` + pixel text | leaning, style, the Treat; sized to its text |
+| Wallet box | `CreateWalletBox` + `FitWalletBox` | both currencies on one line, as wide as its content, refitted when amounts change |
+| Info box | `InfoTooltip.Toggle(anchor, title, body, host)` | the full numbers behind a bar. Ink box above the bar, 6 s or a tap anywhere, one shared instance, never catches taps. The press area is ±30 px around the thin bar |
+| Text box | `DialogBoxView` | typewriter at 45 chars/s, tap to continue, bouncing ▼. `Ask(text, options, onPick)` pops YES / NO. Story, the doorstep, every purchase confirmation, log-out, reset |
+| Toast | ink box, white text, bottom | pops in, 2.2 s, fades |
+| Tabs | `TabBarView.Arrows` + `PagedScroll` | ◀ TITLE ▶ with a 1/4 counter; pages also swipe. Used by every panel |
+| Panel | `PagedPanel` + `PanelRows` | the shell of the battle panels: title, wallet, pager, scrolling lists, Back |
+| Icons | `CreateIcon(IconKind.X)` | drawn in code from simple shapes: coin, heart, moon, sparkle, cookie, bubbles, shield, paw, bag, fish, book ... |
+| Input | `CreateInputField` | 84 tall, muted placeholder |
 
-## Motion (`SimpleTween`, `PressFeedback`)
-- Press: scale to 0.94 in 70 ms on touch; release overshoots to 1.03 then settles (`PressFeedback`, added by
-  every button helper and `MakePressable`). Disabled buttons don't animate.
-- Appear: `PopIn` 0.2–0.3 s (ease-out-back). Reward moments: `PunchScale`, hearts, confetti.
-- **One box language (Pokémon Sapphire reference, 2026-09-14).** Every container in the chrome is the same
-  GBA box: 6 px dark outline (`FrameDark`), 4 px light inner line (`FrameLight`), flat fill, corner pixel cut.
-  It is one point-filtered, 9-sliced sprite with an opaque centre, so `CreateFrame`, `CreateCard` and
-  `CreatePill` all return a single tinted `Image` (the bevel tints with the fill). No drop shadows, no pill
-  radii on containers; `CreateRounded` / `CreateCircle` remain only for illustration shapes (room props, pots).
-- **Meters** (`CreatePillBar`) are Pokémon HP bars: a 3 px outlined track with the fill inset 4 px. The care dock
-  colours them green > 50, yellow > 20, red below; other bars keep their branch colour.
-- **Surfaces.** Home: the background set runs the full screen, floor included, and the status, Skills and care
-  boxes sit straight on it (the blue band was dropped 2026-09-14 — it cut the floor off above the buttons). Panels (Skills, Shop, Settings, Story, Leaderboard) are `PanelBlue` boxes with white
-  rows. Text on blue uses `MenuInk`, never `Muted`.
-- **Type.** Headings and labels use the pixel font (`CreateText(..., heading: true)` and `CreatePixelText`),
-  with a 2 px light shadow like the GBA. Descriptions and long body copy stay in Varela Round for readability.
-- **Buttons** (`CreateButton`): framed, upper-case pixel label aligned left, a ▶ cursor while held. Fill colour
-  encodes the type (Primary pink with white label, white, butter/mint/coral secondary). Icon buttons are square
-  boxes, including the care dock. Buttons that carry one short word (Back, Close) are shrunk to that word with
-  `FitToLabel` (cursor gutter + text + padding, min 160 wide) — never leave a word alone in a 400 px box.
-- **Choices.** Options the player picks between are `MenuGrey` boxes; the chosen one turns white (`Card`), like
-  NEW GAME / OPTION on the title menu. Used for onboarding questions and the species grid.
-- **Tabs / screen switchers** (`TabBarView`, one API: `Select(i)`, `OnSelected`). Four looks to choose from:
-  - *Segmented* — one box split into segments, chosen one white, others grey. Used for Levels / Skills on the
-    leaderboard.
-  - *Chips* — separate boxes with a white icon disc and a label, wrapping into rows. Used for the seven branches
-    on the leaderboard.
-  - *Underline* — plain labels with a thick bar under the active one. Used across the settings sub-pages.
-  - *Arrows* — ◀ TITLE ▶ pager with a 1/5 counter inside the title box, Pokémon Bag style; pairs with
-    `PagedScroll` swiping. Used in the shop.
-- **Care block.** One white box on the blue band holding the four care options in a 2×2 grid, like FIGHT /
-  BAG / POKéMON / RUN: icon, plain pixel name (no shadow), and the need as a percentage on the right (ink,
-  amber under 50, red under 20). No bars. Each cell is the button and shows ▶ while held. During cooldown the
-  icon dims and the name reads the seconds left; below 10% a tooltip pops over the cell.
-- **Mood bubble.** A framed speech box beside the pet's head with a tail cut into its border (two rotated
-  squares: dark behind the box, white inside), so the status is attached to the character, never floating.
-- **Panels share one shape** (Shop, Settings, Leaderboard): big pixel title (52) at the top, a ◀ PAGE ▶ arrows
-  pager with a counter, swipeable `PagedScroll` pages, Back at the bottom. Settings pages: Sound & reminders,
-  Account, Friends & codes, Purchases & about. Leaderboard pages: Levels, then one board per branch.
-- **Status bar.** Name and level as one line ("Mochi · Lv 4"), no level chip; the XP bar (200 wide) and its
-  caption ("79% to Lv 5") sit on that same line right after the level, positioned from the name's
-  preferred width in `SetLevel`, so the second line is just species + "tap for story". The wish chip's disc is 38 px with a 26 px icon.
-- **Leaderboards.** Your row first (pink, true rank), a "TOP 25" divider line, then the rest without you.
-  Board selection is the same ◀ ▶ pager as the shop (the old segmented + chips tabs looked like list cards).
-- **Shop cards.** Pastel art tile (thin outline, colour per category) on top, pixel name, short description,
-  then a price chip (currency icon + "120 COINS" / "40 HEARTS", or APP STORE / FREE) and the action button on one
-  row. Names say what you get ("500 Coins", "No Cooldowns", "Double Rewards"), never a nickname.
-- **Header.** One wallet box on the left, one line: `[coin] 1439 COINS   [heart] 85 HEARTS`
-  (tapping a line opens the shop on Bonuses / Get Hearts), then trophy, bell (news; pink dot when unread), gear; the
-  shop box sits under the gear with the same 12 px gap. Options that are not selected are light grey
-  (`MenuGrey` D4D5DF) with ink text.
-- **Backgrounds** (`RoomScenes`). The room's scene layer holds one background set: Cozy Room (free default),
-  Meadow, Beach Day, Snow Day, Starry Night. The Cozy Room is a **lofi study at dusk** (the "lofi hip hop
-  radio" look, asked for 2026-09-14): a big window onto a purple night city with lit windows, moon and stars;
-  a desk with a glowing laptop, mug with steam, lamp with a warm light cone, headphones and books; posters, a
-  shelf with a radio, a plant, string lights along the top. Painted once by `ScenePainter` (anti-aliased SDF
-  shapes with gradients and soft shadows — bilinear, never pixel-blocky); bulbs and a few stars twinkle as
-  live UI circles. The other sets are lighter procedural scenes. Every set also
-  tints the whole-screen backdrop and glow (`Scene.Backdrop/Glow`). Scenes are painted into a full-screen
-  scene root behind the safe-area column (`HUDController` → `RoomView(sceneParent)`), so they run seamlessly
-  to every screen edge; the floor line sits at 0.444 of the screen height, under the rug. Rug and fairy lights
-  sit on top of any set. Shop cards show a `RoomScenes.Preview` tile.
-- **Text box** (`DialogBoxView`). Typewriter at 45 chars/s, tap to finish or continue, bouncing ▼ when there is
-  more. `Ask(text, options, onPick)` pops a YES / NO box with a ▶ cursor above the right corner. Used for story
-  chapters, the doorstep intro, purchase confirmations, log-out and reset. The HUD owns one global box; the
-  story panel and onboarding own their own.
-- Tweens are restart-safe: `SimpleTween` remembers each transform's rest pose and cancels the previous tween,
-  so repeated taps never compound. Use `PunchScale` / `PopIn` / `Hop`; never stack your own scale maths.
-- Character: `CreatureRig` (Root → Anim → Body/Head/ears/arms/feet/tail/face), parts painted as pixel sprites,
-  driven by `CreatureAnimator` (base loop + one-shot clips). Use `PetPortraitView` everywhere: `SetEmotion`,
-  `Play(OneShot.X, direction)`, `SetLoop`, `React(PetPart)`, `EnableTouch`, `SetAccessory`, `SetConditions`.
-  Mini-games get it through `MiniGameStage.Play / Face / LungeTo`. See `03-art-direction.md` for the part spec.
-- Pages: `PagedScroll` for swipeable category pages with snapping; tabs and swipe stay in sync.
-- Meters: `FillTo` / `AnchorMaxXTo` 0.35 s only for jumps ≥2 points; otherwise set directly.
-- Idle: pet breathes (2.8 s), cloud drifts, plant sways — subtle, never faster than 0.5 Hz.
+### The block bar (`SegmentedBar`)
+
+Health and mana are a row of **slanted blocks, one block per 250 points**.
+
+- The bar's **total width is fixed**. A bigger maximum means more and narrower blocks, never a longer bar.
+  `unit width = (width - skew - 2 px × (blocks - 1)) ÷ (max ÷ 250)`.
+- The last block holds what is left and is narrower in proportion: **1200 is four full blocks and a fifth that is
+  4/5 as wide.**
+- A block the value reaches is filled. A block it does not reach is **only outlined**, white inside. The block
+  the value ends in is filled part of the way. 1000 of 1200 is four filled blocks and one outlined.
+- **2 px gaps**, white: a white strip runs under the whole row, so the separators are white on any background.
+- The blocks lean right (skew 10 to 12 px over the bar's height), outline 2.5 px in the bar's dark line colour.
+- **The numbers follow the bar**: `HP ▰▰▰▰▱ 1000/1200`, pixel 22, read from the left.
+- Health switches to its low colours at a fifth or less.
+- Drawn as an anti-aliased vector mesh, so the slanted edges stay smooth at any size. The layout rule is in
+  three static helpers (`BlockCount`, `BlockShare`, `BlockFill`) that the smoke test checks.
 
 ## Layout of the home screen
-Header (84) → room (flexible; status bar docked at its bottom, full width) → Skills card (124; icon with a
-40 px margin, "Skills · Stage 2/5" with the stage bar stretched beside it up to Train, branch line under) →
-care block (164). All blocks are full column width and separated by 12 px (tighter than `Section`, so the
-three bottom boxes read as one stack on the floor). Panels open over the safe area
-with a scrim; only one panel is open at a time.
+
+Header (84) → room (flexible, with the status block, 136, docked at its bottom) → battle menu (138) → camp block
+(176). Blocks are full column width with 12 px between them, so the three bottom boxes read as one stack on the
+floor. The background runs the full screen behind everything. Panels open over the safe area on a scrim, one at
+a time.
+
+- **Status block** (`RoomView`, two rows). Row 1, centred 40 px down: "Mochi · Lv 4", the leaning chip, the XP
+  bar over the free width, its caption in experience points, the Treat chip; laid out from preferred widths
+  (`LayoutNameLine`), and with a long name the caption gives way first. Row 2, centred 34 px up: HP on the left
+  half, MP on the right, each a pixel-22 label in the bar's line colour, a 26 px block bar, then the numbers in
+  a 122 px slot.
+- **Leaning chip.** The build's name in capitals (pixel 22) on the style's colour; grey ROOKIE before a style is
+  picked. It punches its scale when the leaning changes. Pressing the XP bar explains it.
+- **Treat chip.** 60 tall, a white disc with the fish icon, butter fill; paler with "Treat · 42s" while it
+  cools down.
+- **Battle menu.** A league line on top (pixel 26 name, a butter thin bar, "25 / 200"; press the bar for the info
+  box) and ONE row of doors under it. A door is a pressable cell: 44 px icon, pixel 30 name. The row divides
+  itself by the number of doors, so a fifth can come back.
+- **Camp block.** Four pressable cells, 2 × 2 (`CampCellView`): 48 px icon, pixel 30 name, under it what the
+  action does (pixel 20: "HP +40%", "ATK +10% · 3 BATTLES", green while the buff runs), and on the right where
+  it stands (pixel 26): READY in green, "45S", FULL, or "2 LEFT" in green. While a press would do nothing the
+  icon is at 40% and the name is greyed.
+
+## Panels
+
+- **One shape** (Shop, Settings, Leaderboard, Battle Club, Market): a `PanelBlue` box, a big pixel title, the
+  wallet where money matters, the ◀ PAGE ▶ pager when there is more than one page, swipeable pages, Back at the
+  bottom.
+- **Rows** (`PanelRows`): a flat white framed box; pixel title top-left, body lines under it, a style chip where
+  a style applies, ONE action button on the right, fitted to its word and centred. **The price lives in the
+  button** ("TRAIN · 110", "LEARN · 300", "BUY · 30"). Texts stop 250 px from the right edge so the widest
+  button never covers them. The fill says the state: butter = carried, held or in use; white = owned or
+  buyable; grey = locked, with the league that unlocks it as the disabled button's label.
+- Full-width actions inside a list (FIGHT!, TO THE MARKET) are `PanelRows.Primary`, centred, 96 tall.
+- A panel rebuilds from the save on every change and keeps each list's scroll position (`PagedPanel.Rebuild`).
+- **Shop cards**: a pastel art tile, pixel name, a short description, then a price chip and the action button.
+- **Leaderboards**: your row first (pink, true rank), a TOP 25 divider, then the rest.
+- **Choices** the player picks between are `MenuGrey` boxes; the chosen one turns white.
+
+## The battle screen
+
+Our cat bottom-left and large (340), seen from behind; the rival top-right (190), facing us; each on an ellipse
+platform in the arena's colours. Status boxes: name, style chip, level, the HP block bar; ours adds the MP bar
+and the numbers. Bottom band: the text box on the left, FIGHT / ITEM / CHEER / RUN on the right. FIGHT and ITEM
+swap the text box for a 2 × 2 grid and the actions for an info box (what the highlighted entry does, and Back).
+The first tap highlights, the second confirms. The move info leads with the cost ("MP 120 of 1100", or FREE).
+
+## Backgrounds (`RoomScenes`, `ScenePainter`)
+
+One set at a time behind the whole screen; the floor line sits at 0.444 of the screen height, under the rug. The
+default Cozy Room is almost empty on purpose: a wall, a skirting board, a plain floor with faint board lines,
+one window and the light it throws. **The window tells the time**: four sky palettes blended through the day
+(night, dawn from 6:30, day 8:30 to 16:30, dusk from 18:30, night from 20:30), the sun on an arc from 5:30 to
+20:30, a crescent moon from 19:00 to 7:00, stars as it darkens, one cloud by day; wall, floor and frame go
+light or dark with it. Repainted when the ten-minute bucket turns. `-hour 21.5` pins the hour for review. The
+other sets (Meadow, Beach Day, Snow Day, Starry Night) are lighter scenes with fixed tints. Shapes are
+anti-aliased with gradients and soft shadows, never pixel-blocky. Rugs and fairy lights sit on top of any set.
+
+## Motion (`SimpleTween`, `PressFeedback`)
+
+- Press: scale to 0.94 in 70 ms, release overshoots to 1.03 and settles. Disabled controls do not animate.
+- Appear: `PopIn` 0.2 to 0.3 s. Reward moments: `PunchScale`, hearts, confetti, floating text over the cat.
+- Bars: animate a jump, set small changes directly. Count-ups for wallet amounts (0.5 s).
+- Tweens are restart-safe: `SimpleTween` remembers each transform's rest pose and cancels the previous tween,
+  so repeated taps never compound. Never stack your own scale maths.
+- The cat: use `PetPortraitView` everywhere (`SetFace`, `Play(OneShot.X)`, `SetLoop`, `React(PetPart)`,
+  `SetWornOut`, `SetAccessory`, `StageForBattle`). In a fight it moves through `MiniGameStage`.
 
 ## Writing
-Short, warm, second person ("Snack time?", "Take them home"). Never guilt the player ("your pet is
-suffering" is banned). Numbers are shown, not hidden, when they help ("+30 Energy", "8%").
+
+Short, warm, second person. Upper-case pixel labels for controls, sentence case for body copy. Say what the
+player gets ("500 Coins", "HP +40%"), never a nickname. Battle lines are our own words ("goes for", "a strong
+match-up", "is worn out"). Never guilt the player.
+
+## History
+
+v0.1 (2026-09-13) was a soft pastel UI with rounded cards, drop shadows, pills and round icon buttons, replaced
+by the box language on 2026-09-14. The home screen then carried a mood chip, a wish chip that named the lowest
+need, a Skills card and a care block with need percentages; on 2026-09-21 those became the leaning chip, the
+Treat chip, the battle menu and the camp block, and health and mana moved from pill bars to block bars.

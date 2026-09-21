@@ -18,10 +18,9 @@ namespace Gotchi.UI
         public string PetName = "Mochi";
         public string AgeBand = "";
         public int PreferredPlayHour = 15;
-        public SkillBranch Vibe = SkillBranch.Sport;
     }
 
-    // First-run flow: account → choose a friend → three quick questions.
+    // First-run flow: account → name your friend → the door → two quick questions.
     public class OnboardingView
     {
         private readonly MonoBehaviour _host;
@@ -33,7 +32,6 @@ namespace Gotchi.UI
         private RectTransform _current;
         private int _step;
 
-        private readonly Dictionary<SpeciesType, Image> _rings = new Dictionary<SpeciesType, Image>();
         private readonly Dictionary<string, List<Button>> _optionGroups = new Dictionary<string, List<Button>>();
         private readonly Dictionary<string, int> _answers = new Dictionary<string, int>();
 
@@ -122,36 +120,22 @@ namespace Gotchi.UI
             UIFactory.Place((RectTransform)guest.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-200f, 24f), new Vector2(200f, 94f));
         }
 
+        // The first release is cats only, so there is nothing to choose here: the player names the friend who is
+        // about to turn up, and the door scene reveals who it is. (A 13-species picker stood here until 2026-09-21.)
         private void BuildCharacter()
         {
-            Title("Who is at the door?", "Choose who you hope to find, then name them.");
-            var card = Card("CharacterCard", 200f, 120f);
-            var grid = UIFactory.CreateRect("Grid", card.transform);
-            UIFactory.Place(grid, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(16f, 200f), new Vector2(-16f, -16f));
-            var layout = grid.gameObject.AddComponent<GridLayoutGroup>();
-            layout.cellSize = new Vector2(232f, 250f);
-            layout.spacing = new Vector2(8f, 8f);
-            layout.childAlignment = TextAnchor.UpperCenter;
-            layout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-            layout.constraintCount = 4;
+            Title("Someone is coming", "You will meet them in a moment. What will you call your new friend?");
+            var card = Card("CharacterCard", 200f, 900f);
 
-            _rings.Clear();
-            foreach (SpeciesType species in Enum.GetValues(typeof(SpeciesType)))
-            {
-                SpeciesType captured = species;
-                var cell = UIFactory.CreateFrame(species.ToString(), grid, UIFactory.MenuGrey);
-                _rings[species] = cell;
-                var previewAnchor = UIFactory.CreateRect("Preview", cell.transform);
-                UIFactory.Place(previewAnchor, new Vector2(0.5f, 0.6f), new Vector2(0.5f, 0.6f), Vector2.zero, Vector2.zero);
-                new PetPortraitView(previewAnchor, species, _host, 130f).SetEmotion(EmotionType.Joy, false);
-                var label = UIFactory.CreateText("Name", cell.transform, UIFactory.PrettyName(species.ToString()), 20, UIFactory.Ink, TextAnchor.MiddleCenter, true);
-                label.horizontalOverflow = HorizontalWrapMode.Overflow;
-                UIFactory.Place(label.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 8f), new Vector2(0f, 44f));
-                UIFactory.MakePressable(cell, () => SelectSpecies(captured));
-            }
+            var mystery = UIFactory.CreateCircle("Mystery", card.transform, UIFactory.Lavender, 220f);
+            UIFactory.Place(mystery.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-110f, -270f), new Vector2(110f, -50f));
+            mystery.raycastTarget = false;
+            var mark = UIFactory.CreatePixelText("Mark", mystery.transform, "?", 120, Color.white, TextAnchor.MiddleCenter);
+            UIFactory.Fill(mark.rectTransform);
+            _host.StartCoroutine(SimpleTween.Breathe(mystery.transform, 0.04f, 2.2f));
 
             var nameField = Field(card.transform, "Name your friend", false, 0f);
-            UIFactory.Place(nameField.GetComponent<RectTransform>(), new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(32f, 106f), new Vector2(-32f, 190f));
+            UIFactory.Place(nameField.GetComponent<RectTransform>(), new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(32f, 126f), new Vector2(-32f, 210f));
             nameField.contentType = InputField.ContentType.Name;
             nameField.characterLimit = 14;
             nameField.text = "Mochi";
@@ -161,18 +145,10 @@ namespace Gotchi.UI
                 string name = nameField.text.Trim();
                 if (name.Length == 0) { _error.text = "Give your friend a name first."; return; }
                 _result.PetName = name;
+                _result.Species = SpeciesType.Cat;
                 ShowStep(2);
             }, 30, _host);
-            UIFactory.Place((RectTransform)next.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-200f, 20f), new Vector2(200f, 92f));
-
-            SelectSpecies(_result.Species);
-        }
-
-        private void SelectSpecies(SpeciesType species)
-        {
-            _result.Species = species;
-            foreach (var pair in _rings) pair.Value.color = pair.Key == species ? UIFactory.Card : UIFactory.MenuGrey;
-            if (_rings.TryGetValue(species, out var cell)) _host.StartCoroutine(SimpleTween.PunchScale(cell.transform, 0.06f, 0.18f));
+            UIFactory.Place((RectTransform)next.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-200f, 24f), new Vector2(200f, 100f));
         }
 
         private int _unwrapTaps;
@@ -272,7 +248,7 @@ namespace Gotchi.UI
             var anchor = UIFactory.CreateRect("Friend", _stage);
             anchor.anchoredPosition = new Vector2(0f, 40f);
             _foundFriend = new PetPortraitView(anchor, _result.Species, _host, 300f);
-            _foundFriend.SetEmotion(EmotionType.Nervousness, false);
+            _foundFriend.SetFace(EmotionType.Nervousness, false);
             _host.StartCoroutine(SimpleTween.PopIn(anchor, 0.4f));
             _host.StartCoroutine(Shiver(anchor));
             yield return new WaitForSeconds(0.3f);
@@ -286,7 +262,7 @@ namespace Gotchi.UI
         private void TakeHome()
         {
             _host.StartCoroutine(SimpleTween.ColorTo(_warmGlow, new Color(1f, 0.85f, 0.55f, 0.45f), 0.8f));
-            _foundFriend?.SetEmotion(EmotionType.Gratitude, true);
+            _foundFriend?.SetFace(EmotionType.Gratitude, true);
             _doorDialog.Say($"{_result.PetName} is warm now. Welcome home!", () => ShowStep(3));
         }
 
@@ -334,12 +310,11 @@ namespace Gotchi.UI
 
         private void BuildQuestions()
         {
-            Title("A few quick questions", "This helps Gotchi fit around you.");
-            var card = Card("QuestionsCard", 200f, 560f);
+            Title("Two quick questions", "This helps Gotchi fit around you.");
+            var card = Card("QuestionsCard", 200f, 710f);
             float y = 24f;
             y = Question(card.transform, y, "age", "How old are you?", new[] { "Under 13", "13 to 17", "18 and up" });
-            y = Question(card.transform, y, "time", "When do you usually play?", new[] { "Morning", "Afternoon", "Evening" });
-            Question(card.transform, y, "vibe", "Pick a vibe for your friend", new[] { "Sporty", "Curious", "Kind", "Cozy" });
+            Question(card.transform, y, "time", "When do you usually play?", new[] { "Morning", "Afternoon", "Evening" });
 
             var start = UIFactory.CreateButton("Start", card.transform, "Start playing", UIFactory.Pink, Finish, 30, _host);
             UIFactory.Place((RectTransform)start.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-220f, 20f), new Vector2(220f, 96f));
@@ -377,11 +352,10 @@ namespace Gotchi.UI
         private void Finish()
         {
             foreach (var pair in _answers)
-                if (pair.Value < 0) { _error.text = "Answer all three questions to continue."; return; }
+                if (pair.Value < 0) { _error.text = "Answer both questions to continue."; return; }
 
             _result.AgeBand = new[] { "under13", "13-17", "18+" }[_answers["age"]];
             _result.PreferredPlayHour = new[] { 9, 15, 20 }[_answers["time"]];
-            _result.Vibe = new[] { SkillBranch.Sport, SkillBranch.Science, SkillBranch.Social, SkillBranch.Nature }[_answers["vibe"]];
             _onDone?.Invoke(_result);
         }
     }

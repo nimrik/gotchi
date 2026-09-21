@@ -1,112 +1,75 @@
 # Gotchi — Project Checklist
 
-Status: draft v0.2 — a working checklist tied to the phases in `06-roadmap.md`. `[~]` = partially done. Check items off as you go;
-add new ones as decisions get made. This is meant to be edited constantly, not treated as fixed scope.
+Status: v0.3 (2026-09-21). The working to-do list, by the stages in `06-roadmap.md`. `[x]` done, `[~]` partly
+done, `[ ]` open. Edit it constantly; it is not fixed scope.
 
-## Phase 0 — Foundations
+## Done
 
-- [x] Vision & differentiation locked (`01-vision.md`)
-- [x] Basic needs finalized: Hunger / Hygiene / Energy / Happiness
-- [x] Skill-tree branches finalized (7): Sport / Social / PvP (was Warrior) / Hunter / Science / Nature / Explorer-Adventure (Fashion dropped 2026-09-13)
-- [x] Mini-game types confirmed: tap/reflex, 3D multiplayer arena (PvP), quiz/matching format, PvE, co-op
-- [x] Audience repositioned toward tweens/teens/nostalgic young adults (not primarily under-13)
-- [x] Pet species roster finalized (13): Bunny, Cat, Panda, Red Panda, Seal, Raccoon, Penguin, Fennec,
-      Fox, Pig, Otter, Hedgehog, Dog — see `09-pets-and-emotions.md`
-- [x] Full emotion taxonomy finalized (10 categories, 45 sub-emotions, unique art per sub-emotion) — see
-      `09-pets-and-emotions.md`. Note: this is a large art-asset surface (585+ states before variation
-      counts) — production sequencing still open, see that doc's open questions
-- [x] Decide on a 7th **Explorer/Adventure** branch as a co-op home, or fold co-op fully into Hunter —
-      **decided: add Explorer/Adventure as a 7th branch.** Hunter stays solo PvE; co-op (play with a
-      friend vs. enemies) lives in Explorer/Adventure instead, since the two are mechanically distinct
-      (singleplayer vs. co-op-with-a-friend), not a natural fit for one branch.
-- [x] Decide evolution model: single-branch-locked vs. blended — **decided: single-branch-locked** (one
-      dominant invested branch determines the evolved form). Simpler art scope (one form per branch) and
-      simpler save-state representation; matches the team's beginner Unity/C# capacity.
-- [ ] Build the art mood board / concrete references beyond "Celeste-inspired" — left open, needs a
-      dedicated reference-gathering session
-- [x] Internal render resolution — **decided: the UI renders natively (anti-aliased); only creature sprites are
-      pixel art, resampled to a fixed 112-px grid** (`CreatureSprites.PixelHeight`). The 2D world art, when it
-      comes, should follow the same per-sprite grid rather than a global low-res pass.
-- [x] Assess team weekly time budget and current Unity/C# comfort level, honestly — **confirmed:
-      side-project pace (a few hours/week each), both beginners at Unity/C#.** Roadmap should build in a
-      real learning-curve buffer, especially through Phase 1.
-- [ ] Sketch real store positioning (icon direction, screenshot style, description tone) supporting the
-      13+ audience shift — needs to be genuine, not just a label — left open
+- [x] Vision, audience (tweens, teens, young adults), two-person side-project scope (`01-vision.md`)
+- [x] Unity 6000.6.2f1 project, built-in render pipeline, uGUI, everything built in code, iOS export compiles
+- [x] Tooling: Editor menu, headless smoke test (258 checks), capture runs, `-tempsave`, `-hour`, creature lab
+- [x] The cat: model, rig, 27 clips, face meshes, accessories, coats (`03-art-direction.md`)
+- [x] First release is cats only: onboarding names the cat, keepers' cats differ by coat
+- [x] Home screen: wallet, story, leaderboards, news, settings, shop; the room with the time-of-day window;
+      status block (name, level, leaning, XP, Treat, health and mana block bars); battle menu; camp block
+- [x] Touching the cat: part reactions, petting, pick up and throw; taps wear its patience until it walks off
+- [x] Battle rules: styles, 15 moves, mana, stat stages, priority, crits, recoil, items, charms, rival AI
+- [x] Battle screen: back view, rival coats, move info with mana cost, self-playing mode for captures
+- [x] Battle Club: Club / Train / Moves / Bag pages, leagues, rating, first-win bonus, daily quests, rival card
+- [x] The Market: buy, sell at half price, daily trade board (mock keepers)
+- [x] Health and mana persist after a fight and refill with time, also offline; worn out under a tenth
+- [x] The camp: REST, FOCUS, FEED, GROOM, the Treat; helpers improve camp actions; nothing decays
+- [x] Leanings (style × most trained stat) in the status block
+- [x] Level and story chapters, battle XP and evolution stages, login streak, streak shield
+- [x] Shop: hearts packs (mock), bonuses, outfits, backgrounds, room decor, helpers; YES / NO before every spend
+- [x] Leaderboards (levels, battle rating) and keeper profiles against 24 mock keepers
+- [x] News centre, settings, promo and invite codes, accounts (mock), age band with under-13 restrictions
+- [x] Removed: the four needs, the emotion system, six mini-games and their branches, the species picker
+- [x] Original-characters rule written down (`05-monetization-compliance.md`)
 
-## Phase 1 — Core loop prototype
+## Stage 1 — Make the fight feel good
 
-- [x] Set up the Unity project — **Unity 6000.6.0f1, built-in RP + uGUI, iOS build target; the repo is the
-      project.** Compiles with zero errors/warnings, logic smoke test passes (140 checks), `Main.unity` wired.
-      URP deferred to the art phase. See `10-unity-setup.md`.
-- [x] Build a placeholder pet with the 4 basic-need meters — `NeedsSystem`, `HUDController`
-- [x] Implement manual care interactions for each need — `CareActionService` (cooldowns, rescue → gratitude)
-- [x] Implement real-time simulation — `NeedsSystem.ApplyOfflineElapsed` (capped at 36h so the pet never dies)
-- [ ] Internally playtest the 2–3 minute core session — validate it's actually satisfying
-- [ ] Explicitly hold off on: skill tree, monetization, notifications, mini-games (Phase 1 is loop-only)
+- [ ] Author the six battle clips: defensive, attacking, screaming, healing, defeated, lightly wounded
+      (`13-pvp-design.md`, section 7). `BattleMiniGame.PlayCue` plays stand-ins until then
+- [ ] Battle effects: hit sparks, style-coloured flashes, heal glow
+- [ ] Sound: hits, menu, win and loss, camp actions (there is no audio in the game yet)
+- [ ] Balance pass: rest loop, mana costs, Bronze and Silver rivals (open questions in `13-pvp-design.md`)
+- [ ] Run on a real iPhone (code signing is the only step left) and check bar and text sizes in the hand
+- [ ] Play the first hour end to end and write down where it drags
 
-## Phase 2 — Progression layer
+## Stage 2 — Depth for the first release
 
-- [x] Implement automation mechanics for basic needs — `AutomationSystem` (4 unlockable helpers that slow decay)
-- [x] Skill-tree system built for all 7 branches (`SkillTreeSystem`); 5 have playable mini-games, 2 are stubs
-- [x] Implement a first evolution branch point — single-branch lock-in at 500 XP, 5 stages (`SkillTreeSystem`)
-- [ ] Design and tune cost/time scaling curves (Clash of Clans-style) — only after the prototype feel is
-      validated, not on paper beforehand
+- [ ] Evolution stages: what each looks like and unlocks
+- [ ] Rewrite the story chapters for a fighter's journey
+- [ ] Decide the two leaks in the hearts rule (coins exchange, the helper in the Starter Pack)
+- [ ] Rival charms from Gold up, if the top leagues turn into stat checks
+- [ ] Remove or archive the 2D creature code if no other character will use it
 
-## Phase 3 — Art pass
+## Stage 3 — Online
 
-- [ ] Finalize mood board and internal render resolution (carried from Phase 0 if not done yet)
-- [ ] Lock the art style guide (palette, proportions, shading rules) via the Nano Banana → PixelLab.ai
-      pipeline in `03-art-direction.md`, before starting bulk sprite production
-- [ ] Source/generate 2D world & UI assets (PixelLab.ai and similar tools)
-- [~] Background sets — five procedural scenes (`RoomScenes`: Cozy Room free, Meadow / Beach Day / Snow Day /
-      Starry Night sold in the shop); swap the painted props for drawn art in the art pass
-- [~] Creature rig + core animations — **built in code** (`Creature/`): part skeleton, pixel-painted parts,
-      base loops and one-shot clips, 45 expressions. Remaining: replace painted parts with drawn part PNGs
-      per species (spec in `03-art-direction.md`); the 3D model idea is dropped
-- [ ] Produce the full 45-state emotion sprite set for one creature first to validate the pipeline, before
-      scaling to all 13 species (see open questions in `09-pets-and-emotions.md`)
-- [ ] Apply real art to the already-validated prototype from Phases 1–2
+- [ ] Supabase: accounts, cloud save, leaderboards, news (`04-tech-plan.md`)
+- [ ] Asynchronous rivals (an AI copy of a real player's build), then live PvP with server-side rolls
+- [ ] Real trading: only after a moderation plan and the under-13 decision
+- [ ] Display-name filter
 
-## Phase 4 — Retention & mini-games
+## Stage 4 — Store readiness
 
-- [x] Build the Sport branch mini-game — `TapReflexMiniGame` ("Bubble Dash")
-- [x] Build the Social + Science quiz mini-game — `QuizMiniGame` + `QuizBank` (placeholder questions)
-- [x] Build the Hunter branch PvE mini-game (solo) — `HuntMiniGame` (three waves of drifting critters)
-- [x] Build the Nature branch mini-game — `BloomMiniGame` ("Bloom Sort" colour-matching under a wilt timer; replaced the timing bar)
-- [~] Explorer/Adventure branch — solo *Trail Memory* built; the co-op (friend vs. enemies) version needs networking
-- [~] PvP branch — turn-based *Battle* (Sapphire-style: moves, PP, types, STAB, crits, stat stages, items) built
-      against mock rival pets; live PvP over the network remains future work
-- [x] Login streak system — `GameBootstrap.ApplyLoginStreak` (escalating coin reward, capped at 50)
-- [~] Push notifications with quiet-hours logic — scheduling logic done (`NotificationScheduler`); delivery is
-      a log stub until `com.unity.mobile.notifications` is wired
-- [ ] Leaderboards / social rankings — only after compliance questions below are resolved
-- [~] Notification center (bell in the header): announcements, updates, bug fixes, events — mock feed now,
-      Supabase `news` table later; read state in the save
-- [ ] Seasonal content system groundwork (can be minimal for v1)
+- [ ] StoreKit purchases, receipt validation, Restore Purchases
+- [~] Notifications: scheduling and quiet hours done, delivery is a log stub (`com.unity.mobile.notifications`)
+- [ ] Privacy policy and terms, linked from Settings
+- [ ] Age rating questionnaire; SDK audit (`07-apple-compliance-questionnaire.md`)
+- [ ] IP review by a lawyer
+- [ ] Store metadata: name, icon, screenshots, description for the older audience
+- [ ] TestFlight
 
-## Phase 5 — Compliance & store readiness
+## Stage 5 — Soft launch
 
-- [ ] Complete Apple's age rating questionnaire honestly; confirm what it actually calculates to
-- [ ] Write the privacy policy
-- [~] Implement the age-band collection flow — asked during onboarding, stored only in the local save;
-      under-13 hides real-money shop items. Review wording/legal copy before store submission.
-- [ ] Audit every third-party SDK (analytics, crash reporting, IAP) against the compliance notes in
-      `07-apple-compliance-questionnaire.md`
-- [~] Purchase-confirmation friction step — every Buy now asks YES / NO in the text box before spending; the
-      purchase abstraction exists (`IPurchaseService`, mock for MVP); **real purchases must use Apple StoreKit,
-      not Stripe** (Guideline 3.1.1)
-- [ ] Finalize the IAP catalog (which cosmetics/bonuses, pricing)
-- [ ] Finalize store metadata (screenshots, description, icon) consistent with the 13+ positioning
+- [ ] A small release and a way to hear from players
+- [ ] Tune pacing and economy from real numbers
 
-## Phase 6 — Soft launch / beta
+## After the first release
 
-- [ ] Limited release to a small audience
-- [ ] Set up a feedback collection mechanism
-- [ ] Iterate on core loop / progression pacing based on real feedback before a full marketing push
-
-## Explicitly deferred (not v1 — revisit post-launch)
-
-- [ ] Hardcore (1:1 real-time) mode
-- [ ] Multiple/simultaneous pets, breeding, trading
-- [ ] Android release
-- [ ] Rhythm/music and racing/obstacle mini-game types
+- [ ] Design the world to explore that grows out of the parked Wild (`GameFeatures.Wild`)
+- [ ] More characters, all original (a patent check before any catching mechanic)
+- [ ] Friend battles, tournaments, seasons, clubs
+- [ ] Android, Hardcore mode, several pets

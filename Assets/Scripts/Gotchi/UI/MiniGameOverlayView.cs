@@ -15,6 +15,7 @@ namespace Gotchi.UI
         private readonly MonoBehaviour _host;
         private readonly Action<MiniGameResult> _onResult;
         private readonly Func<SkillBranch, MiniGameDifficulty> _difficultyFor;
+        private readonly Action<MiniGameInfo> _onClosed;
         private readonly RectTransform _playArea;
         private readonly Text _title;
         private readonly Text _result;
@@ -25,11 +26,13 @@ namespace Gotchi.UI
 
         public readonly GameObject Root;
 
-        public MiniGameOverlayView(Transform parent, Action<MiniGameResult> onResult, Func<SkillBranch, MiniGameDifficulty> difficultyFor, MonoBehaviour host)
+        // `onClosed` tells the owner which game the player just left (the HUD reopens the Battle Club after a battle).
+        public MiniGameOverlayView(Transform parent, Action<MiniGameResult> onResult, Func<SkillBranch, MiniGameDifficulty> difficultyFor, MonoBehaviour host, Action<MiniGameInfo> onClosed = null)
         {
             _host = host;
             _onResult = onResult;
             _difficultyFor = difficultyFor;
+            _onClosed = onClosed;
 
             var panel = UIFactory.CreatePanel("MiniGameOverlay", parent, UIFactory.Cream);
             Root = panel.gameObject;
@@ -61,12 +64,26 @@ namespace Gotchi.UI
         public void Open(MiniGameInfo info)
         {
             if (info == null || !info.Implemented) return;
-            Close();
+            Cleanup();
             Root.SetActive(true);
             _currentInfo = info;
             var difficulty = _difficultyFor(info.Branch);
-            _title.text = $"{info.DisplayName} · Tier {difficulty.Tier}";
-            _result.text = info.Tagline + (difficulty.Tier > 1 ? $"   Rewards ×{difficulty.RewardMultiplier:0.##}" : "");
+            var encounter = MiniGameContext.Encounter;
+            if (encounter != null && encounter.Arena != null)
+            {
+                _title.text = encounter.Arena.Name;
+                _result.text = encounter.Kind == BattleKind.Boss ? "The area boss. Win to clear the area." : "A wild cat. Health and moves carry over to the next fight.";
+            }
+            else if (MiniGameContext.Battle != null)
+            {
+                _title.text = $"{MiniGameContext.Battle.League.Name} League";
+                _result.text = $"Rating {MiniGameContext.Battle.Rating} · coins ×{difficulty.RewardMultiplier:0.##}";
+            }
+            else
+            {
+                _title.text = info.DisplayName;
+                _result.text = info.Tagline;
+            }
             _finished = false;
 
             _gameObject = new GameObject("MiniGame", typeof(RectTransform));
@@ -92,12 +109,20 @@ namespace Gotchi.UI
             yield return new WaitForSeconds(0.35f);
             if (!_finished || !Root.activeSelf) yield break;
 
+            // Battles add lines of their own (rating, streak, quests, promotion); the card grows downward for them.
+            int extraLines = result.Lines != null ? result.Lines.Count : 0;
+            float extra = extraLines * 34f;
             var card = UIFactory.CreateCard("Results", _playArea, UIFactory.Cream, 1f);
             var holder = (RectTransform)card.transform.parent;
-            UIFactory.Place(holder, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-340f, -310f), new Vector2(340f, 310f));
+            UIFactory.Place(holder, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-380f, -310f - extra * 0.5f), new Vector2(380f, 310f + extra * 0.5f));
 
             var title = UIFactory.CreateText("Title", card.transform, result.Summary, 40, UIFactory.Ink, TextAnchor.MiddleCenter, true);
             UIFactory.Place(title.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(20f, -120f), new Vector2(-20f, -30f));
+            for (int i = 0; i < extraLines; i++)
+            {
+                var line = UIFactory.CreateText("Line", card.transform, result.Lines[i], 22, i == 0 ? UIFactory.Ink : UIFactory.PinkDark, TextAnchor.MiddleCenter, i == 0);
+                UIFactory.Place(line.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(20f, 124f + (extraLines - 1 - i) * 34f), new Vector2(-20f, 158f + (extraLines - 1 - i) * 34f));
+            }
 
             int lit = !result.Won ? 1 : result.XpReward >= 60 ? 3 : 2;
             var stars = new List<RectTransform>();
@@ -112,14 +137,18 @@ namespace Gotchi.UI
                 stars.Add(star);
             }
 
+            // Score, rewards and the needs line hang from the top so extra battle lines fit between them and the button.
             var score = UIFactory.CreateText("Score", card.transform, "Score 0", 46, UIFactory.Ink, TextAnchor.MiddleCenter, true);
-            UIFactory.Place(score.rectTransform, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(20f, -10f), new Vector2(-20f, 70f));
-            var rewards = UIFactory.CreateText("Rewards", card.transform, $"+{result.XpReward} XP   +{result.CoinReward} coins" + (result.Tier > 1 ? $"\nTier {result.Tier} · ×{result.RewardMultiplier:0.##}" : ""), 30, UIFactory.PinkDark, TextAnchor.MiddleCenter, true);
-            UIFactory.Place(rewards.rectTransform, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(20f, -80f), new Vector2(-20f, -20f));
-            var needs = UIFactory.CreateText("Needs", card.transform, MiniGameNeeds.Describe(result.Tier), 20, UIFactory.Muted, TextAnchor.MiddleCenter);
-            UIFactory.Place(needs.rectTransform, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(20f, -116f), new Vector2(-20f, -84f));
+            UIFactory.Place(score.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(20f, -320f), new Vector2(-20f, -240f));
+            var rewards = UIFactory.CreateText("Rewards", card.transform, $"+{result.XpReward} XP   +{result.CoinReward} coins" + (result.Tier > 1 && extraLines == 0 ? $"\nTier {result.Tier} · ×{result.RewardMultiplier:0.##}" : ""), 30, UIFactory.PinkDark, TextAnchor.MiddleCenter, true);
+            UIFactory.Place(rewards.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(20f, -390f), new Vector2(-20f, -330f));
+            var note = UIFactory.CreateText("Note", card.transform, "Health and mana stay as the fight left them. The camp brings them back.", 20, UIFactory.Muted, TextAnchor.MiddleCenter);
+            UIFactory.Place(note.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(20f, -426f), new Vector2(-20f, -394f));
 
-            var again = UIFactory.CreateButton("Again", card.transform, "Play again", UIFactory.Pink, () => Open(_currentInfo), 30, _host);
+            // A ranked battle offers the next one; a fight in the Wild goes back to the trail.
+            var again = result.NoReplay
+                ? UIFactory.CreateButton("Again", card.transform, "Continue", UIFactory.Pink, Close, 30, _host)
+                : UIFactory.CreateButton("Again", card.transform, "Next battle", UIFactory.Pink, () => Open(_currentInfo), 30, _host);
             UIFactory.Place((RectTransform)again.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(-170f, 34f), new Vector2(170f, 110f));
 
             _host.StartCoroutine(SimpleTween.PopIn(holder, 0.3f));
@@ -165,7 +194,16 @@ namespace Gotchi.UI
             foreach (var (rect, _, __) in pieces) if (rect != null) UnityEngine.Object.Destroy(rect.gameObject);
         }
 
+        // Leaves the game for good: tears it down and tells the owner which one it was.
         public void Close()
+        {
+            bool wasOpen = Root.activeSelf;
+            var info = _currentInfo;
+            Cleanup();
+            if (wasOpen) _onClosed?.Invoke(info);
+        }
+
+        private void Cleanup()
         {
             if (_game != null)
             {

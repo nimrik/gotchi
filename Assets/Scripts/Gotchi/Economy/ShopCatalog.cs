@@ -39,9 +39,9 @@ namespace Gotchi.Economy
 
             // Bonuses (hearts / coins). Every name says what you get.
             new ShopItem { Id = "coins_pack",   Category = ShopCategory.Bonuses, Kind = ShopItemKind.SoftCurrencyPack, DisplayName = "500 Coins",      Description = "Trade 20 hearts for 500 coins.", CostCurrency = CurrencyType.Premium, Cost = 20, Amount = 500 },
-            new ShopItem { Id = "treat_box",    Category = ShopCategory.Bonuses, Kind = ShopItemKind.NeedRefill,       DisplayName = "Full Refill",    Description = "All four needs to 100% right now.", CostCurrency = CurrencyType.Soft, Cost = 40, Amount = 100 },
-            new ShopItem { Id = "zoomies",      Category = ShopCategory.Bonuses, Kind = ShopItemKind.CooldownBoost,    DisplayName = "No Cooldowns",   Description = "Care actions have no wait for 1 hour.", CostCurrency = CurrencyType.Premium, Cost = 15, Hours = 1f },
-            new ShopItem { Id = "lucky_hour",   Category = ShopCategory.Bonuses, Kind = ShopItemKind.RewardBoost,      DisplayName = "Double Rewards", Description = "2× XP and coins from mini-games for 1 hour.", CostCurrency = CurrencyType.Premium, Cost = 20, Hours = 1f },
+            new ShopItem { Id = "treat_box",    Category = ShopCategory.Bonuses, Kind = ShopItemKind.NeedRefill,       DisplayName = "Full Recovery",  Description = "Health and mana to full right now.", CostCurrency = CurrencyType.Soft, Cost = 40, Amount = 100 },
+            new ShopItem { Id = "zoomies",      Category = ShopCategory.Bonuses, Kind = ShopItemKind.CooldownBoost,    DisplayName = "No Cooldowns",   Description = "Camp actions and treats have no wait for 1 hour.", CostCurrency = CurrencyType.Premium, Cost = 15, Hours = 1f },
+            new ShopItem { Id = "lucky_hour",   Category = ShopCategory.Bonuses, Kind = ShopItemKind.RewardBoost,      DisplayName = "Double Rewards", Description = "2× XP and coins from battles for 1 hour.", CostCurrency = CurrencyType.Premium, Cost = 20, Hours = 1f },
             new ShopItem { Id = "streak_shield",Category = ShopCategory.Bonuses, Kind = ShopItemKind.StreakShield,     DisplayName = "Streak Shield",  Description = "Keeps your login streak if you miss a day.", CostCurrency = CurrencyType.Premium, Cost = 10 },
 
             // Style (worn by the pet)

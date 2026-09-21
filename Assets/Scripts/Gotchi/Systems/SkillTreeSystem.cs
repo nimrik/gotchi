@@ -20,6 +20,12 @@ namespace Gotchi.Systems
         public SkillTreeSystem(PetSaveData data)
         {
             _data = data;
+            // A save locked into a branch whose game was removed (SkillBranches.Active) is set free again.
+            if (_data.evolutionBranchLocked && !SkillBranches.IsActive(_data.lockedEvolutionBranch))
+            {
+                _data.evolutionBranchLocked = false;
+                _data.evolutionStage = Math.Min(MaxStage, GetXp(DominantBranch) / XpPerStage);
+            }
         }
 
         public int GetXp(SkillBranch branch) => _data.GetXp(branch);
@@ -34,9 +40,9 @@ namespace Gotchi.Systems
         {
             get
             {
-                SkillBranch best = SkillBranch.Sport;
+                SkillBranch best = SkillBranches.Active[0];
                 int bestXp = int.MinValue;
-                foreach (SkillBranch branch in Enum.GetValues(typeof(SkillBranch)))
+                foreach (SkillBranch branch in SkillBranches.Active)   // XP left in a removed branch no longer leads
                 {
                     int xp = GetXp(branch);
                     if (xp <= bestXp) continue;

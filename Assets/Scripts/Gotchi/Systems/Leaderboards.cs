@@ -4,7 +4,7 @@ using Gotchi.Data;
 
 namespace Gotchi.Systems
 {
-    public enum LeaderboardKind { Level, Skill }
+    public enum LeaderboardKind { Level, Skill, Battle }
 
     public class LeaderboardEntry
     {
@@ -12,6 +12,7 @@ namespace Gotchi.Systems
         public string DisplayName;
         public string PetName;
         public SpeciesType Species;
+        public string CoatId = "";
         public int Value;
         public int Rank;
         public bool IsLocal;
@@ -23,6 +24,9 @@ namespace Gotchi.Systems
         public string DisplayName;
         public string PetName;
         public SpeciesType Species;
+        public string CoatId = "";          // fur colouring of their cat (Creature3D/CatCoat); "" = the player's own cocoa
+        public int BattleRating;
+        public BattleStyle BattleStyle;
         public int Level;
         public int EvolutionStage;
         public SkillBranch EvolutionBranch;
@@ -34,6 +38,7 @@ namespace Gotchi.Systems
     {
         List<LeaderboardEntry> Top(LeaderboardKind kind, SkillBranch branch, int count);
         PlayerProfile Profile(string playerId);
+        PlayerProfile RivalNear(int rating, int seed);   // Battle Club match-making
     }
 
     // Stable fake players around the real local player; the same interface will be backed by Supabase.
@@ -53,21 +58,26 @@ namespace Gotchi.Systems
         {
             _local = local;
             var random = new System.Random(20260913);
-            var species = (SpeciesType[])Enum.GetValues(typeof(SpeciesType));
+            string[] coats = { "ginger", "smoke", "night", "cream" };
+            var styles = new[] { BattleStyle.Claw, BattleStyle.Fluff, BattleStyle.Trick };
             for (int i = 0; i < Names.Length; i++)
             {
+                // The first release is cats only: every keeper has a cat, told apart by its coat.
                 var profile = new PlayerProfile
                 {
                     PlayerId = "mock-" + i,
                     DisplayName = Names[i],
                     PetName = Names[i].Split(' ')[0],
-                    Species = species[i % species.Length],
+                    Species = SpeciesType.Cat,
+                    CoatId = coats[i % coats.Length],
                     Level = 1 + random.Next(0, 11),
                     StreakDays = 1 + random.Next(0, 30),
                 };
-                for (int b = 0; b < 7; b++) profile.BranchXp[b] = random.Next(0, 4) == 0 ? 0 : random.Next(20, 1400);
-                int best = 0;
-                for (int b = 1; b < 7; b++) if (profile.BranchXp[b] > profile.BranchXp[best]) best = b;
+                for (int b = 0; b < 7; b++) profile.BranchXp[b] = !SkillBranches.IsActive((SkillBranch)b) || random.Next(0, 4) == 0 ? 0 : random.Next(20, 1400);
+                profile.BattleRating = (int)(Math.Pow(random.NextDouble(), 2.6) * 1700);   // half the keepers sit in Bronze and Silver, a few at the top
+                profile.BattleStyle = styles[i % styles.Length];
+                int best = (int)SkillBranches.Active[0];
+                foreach (var active in SkillBranches.Active) if (profile.BranchXp[(int)active] > profile.BranchXp[best]) best = (int)active;
                 profile.EvolutionBranch = (SkillBranch)best;
                 profile.EvolutionStage = Math.Min(SkillTreeSystem.MaxStage, profile.BranchXp[best] / SkillTreeSystem.XpPerStage);
                 _players.Add(profile);
@@ -80,8 +90,8 @@ namespace Gotchi.Systems
             var entries = new List<LeaderboardEntry>();
             foreach (var p in all)
             {
-                int value = kind == LeaderboardKind.Level ? p.Level : p.BranchXp[(int)branch];
-                entries.Add(new LeaderboardEntry { PlayerId = p.PlayerId, DisplayName = p.DisplayName, PetName = p.PetName, Species = p.Species, Value = value, IsLocal = p.PlayerId == "local" });
+                int value = kind == LeaderboardKind.Level ? p.Level : kind == LeaderboardKind.Battle ? p.BattleRating : p.BranchXp[(int)branch];
+                entries.Add(new LeaderboardEntry { PlayerId = p.PlayerId, DisplayName = p.DisplayName, PetName = p.PetName, Species = p.Species, CoatId = p.CoatId, Value = value, IsLocal = p.PlayerId == "local" });
             }
             entries.Sort((a, b) => b.Value != a.Value ? b.Value.CompareTo(a.Value) : string.CompareOrdinal(a.DisplayName, b.DisplayName));
             for (int i = 0; i < entries.Count; i++) entries[i].Rank = i + 1;
@@ -93,6 +103,16 @@ namespace Gotchi.Systems
         {
             if (playerId == "local") return _local();
             return _players.Find(p => p.PlayerId == playerId);
+        }
+
+        // A keeper to battle: one of the five whose rating is closest to `rating`, picked by `seed` so the same
+        // call gives the same rival. The real service will do this match-making on the server.
+        public PlayerProfile RivalNear(int rating, int seed)
+        {
+            var sorted = new List<PlayerProfile>(_players);
+            sorted.Sort((a, b) => Math.Abs(a.BattleRating - rating).CompareTo(Math.Abs(b.BattleRating - rating)));
+            int pool = Math.Min(5, sorted.Count);
+            return pool == 0 ? null : sorted[(int)((uint)seed % (uint)pool)];
         }
     }
 }

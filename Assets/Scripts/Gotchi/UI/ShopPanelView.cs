@@ -19,6 +19,7 @@ namespace Gotchi.UI
         private readonly Text _title;
         private readonly Text _coins;
         private readonly Text _gems;
+        private readonly RectTransform _wallet;
         private readonly PagedScroll _pages;
         private readonly List<ShopCategory> _categories = new List<ShopCategory>();
         private TabBarView _tabBar;
@@ -45,7 +46,8 @@ namespace Gotchi.UI
             UIFactory.Place(_title.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -84f), new Vector2(0f, -24f));
             // Wallet: the same box as the home header, so the numbers read the same everywhere.
             var wallet = UIFactory.CreateWalletBox("Wallet", card.transform, out _coins, out _gems);
-            UIFactory.Place(wallet.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-310f, -176f), new Vector2(310f, -92f));
+            _wallet = wallet.rectTransform;
+            UIFactory.Place(_wallet, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-310f, -176f), new Vector2(310f, -92f));
 
             if (allowRealMoney) _categories.Add(ShopCategory.Hearts);
             _categories.AddRange(new[] { ShopCategory.Bonuses, ShopCategory.Style, ShopCategory.Backgrounds, ShopCategory.Room, ShopCategory.Helpers });
@@ -114,6 +116,9 @@ namespace Gotchi.UI
         {
             _coins.text = _ctx.Wallet.Get(CurrencyType.Soft) + " COINS";
             _gems.text = _ctx.Wallet.Get(CurrencyType.Premium) + " HEARTS";
+            float walletWidth = UIFactory.FitWalletBox(_coins, _gems, _coins.text, _gems.text);   // box hugs its content, stays centred
+            _wallet.offsetMin = new Vector2(-walletWidth * 0.5f, _wallet.offsetMin.y);
+            _wallet.offsetMax = new Vector2(walletWidth * 0.5f, _wallet.offsetMax.y);
             HighlightTab();
             foreach (var category in _categories) BuildPage(category);
         }
@@ -132,14 +137,14 @@ namespace Gotchi.UI
                     AutomationDefinition captured = def;
                     bool unlocked = _ctx.Automation.IsUnlocked(def.Id);
                     bool can = _ctx.Automation.CanUnlock(def, _ctx.Skills, _ctx.Wallet);
-                    var cardRect = Card(grid, def.DisplayName, $"Slows {def.Need} decay. Needs {def.RequiredXp} {UIFactory.PrettyName(def.RequiredBranch.ToString())} XP.", TileColor(category),
+                    var cardRect = Card(grid, def.DisplayName, $"{def.Description} Needs {def.RequiredXp} battle XP.", TileColor(category),
                         def.SoftCost.ToString(), UIFactory.IconKind.Coin, unlocked ? "Active" : "Unlock", UIFactory.Mint, !unlocked && can, () =>
                         {
                             bool ok = _ctx.Automation.TryUnlock(captured, _ctx.Skills, _ctx.Wallet);
                             _toast(ok ? $"{captured.DisplayName} is on!" : "Not yet — check the requirements.");
                             Refresh();
                         });
-                    IconPreview(cardRect, def.Need == NeedType.Hunger ? UIFactory.IconKind.Cookie : def.Need == NeedType.Hygiene ? UIFactory.IconKind.Shower : def.Need == NeedType.Energy ? UIFactory.IconKind.Moon : UIFactory.IconKind.Ball);
+                    IconPreview(cardRect, def.Action == CampAction.Feed ? UIFactory.IconKind.Cookie : def.Action == CampAction.Groom ? UIFactory.IconKind.Bubbles : def.Action == CampAction.Rest ? UIFactory.IconKind.Moon : UIFactory.IconKind.Sparkle);
                 }
                 return;
             }
@@ -198,7 +203,7 @@ namespace Gotchi.UI
                     var anchor = UIFactory.CreateRect("Preview", cardRect);
                     UIFactory.Place(anchor, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -92f), new Vector2(0f, -92f));
                     var preview = new PetPortraitView(anchor, _ctx.Data.species, _host, 112f);
-                    preview.SetEmotion(EmotionType.Joy, false);
+                    preview.SetFace(EmotionType.Joy, false);
                     preview.SetAccessory(item.Id);
                 }
                 else if (item.Kind == ShopItemKind.Background)

@@ -50,7 +50,9 @@ namespace Gotchi.UI
             float s = Scale;
             float ccx = cx * s, ccy = cy * s, rrx = rx * s, rry = ry * s, m = Mathf.Min(rrx, rry);
             float cos = Mathf.Cos(rotation * Mathf.Deg2Rad), sin = Mathf.Sin(rotation * Mathf.Deg2Rad);
-            float reach = Mathf.Max(rrx, rry) + soft * s + 2f;
+            // The distance below is scaled by the minor radius, so along the major axis a soft edge spreads further
+            // than `soft`; the box has to cover that or a flat, blurry ellipse gets cut into a rectangle.
+            float reach = Mathf.Max(rrx, rry) * (1f + Mathf.Max(0.75f, soft * s) * 0.5f / Mathf.Max(1f, m)) + soft * s + 2f;
             Paint(ccx - reach, ccy - reach, ccx + reach, ccy + reach, soft * s, (px, py) =>
             {
                 float dx = px - ccx, dy = py - ccy;

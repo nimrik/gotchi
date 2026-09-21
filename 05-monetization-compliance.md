@@ -1,98 +1,88 @@
 # Gotchi — Monetization & Compliance
 
-Status: draft v0.1 — based on Apple's published guidelines as of mid-2026; re-verify before submission,
-as these policies do get updated.
+Status: v0.2 (2026-09-21). A planning aid, not legal advice. Apple's rules change; re-check them before every
+submission. The working checklist is `07-apple-compliance-questionnaire.md`.
 
-## Monetization model
+## Model
 
-- Free with in-app purchases (confirmed direction).
-- Ads: not planned by default — and heavily constrained anyway if pursuing the Kids Category (see below).
+Free, with fixed-price in-app purchases. No ads, no loot boxes, no random paid rewards, no subscriptions in the
+first release. Real money buys **hearts**; hearts buy looks and convenience.
 
-## Apple's Kids Category — why it matters here
+## Decisions
 
-Our audience (5–13, skewing girls) overlaps heavily with Apple's Kids Category, which is a curated,
-higher-trust section of the App Store — but it comes with binding requirements:
+- **Audience: tweens, teens and nostalgic young adults**, a real positioning in tone, store copy and content
+  (`01-vision.md`). That is what makes skipping the Kids Category defensible.
+- **Not in Apple's Kids Category.** The age rating is calculated from a content questionnaire and not chosen,
+  and Apple can treat an app as "for kids" whatever it declares (Guideline 1.3). A battler with mild cartoon
+  fights will be asked about cartoon or fantasy violence; answer it honestly and see what the rating comes to.
+- **Data: the game needs an age band and nothing else.** No photos, contacts or location. The band is a flag
+  in the local save, tied to no identifier, sent to nobody. Guests play the whole game. An optional account
+  (display name, email, password) exists as a mock; before it becomes real it goes into the privacy policy and
+  the data audit, and the password is never stored.
+- **Under-13 band:** real-money items are hidden entirely.
+- **Every purchase asks first.** A YES / NO box opens before any spend, coins included.
+- **Apple's purchase system only** for digital goods (Guideline 3.1.1). No Stripe, no links out.
+- **No third-party analytics or advertising SDKs** by default. Anything added later is audited first.
+- **Notifications:** one kind only ("rested and ready"), never between 21:00 and 09:00, never guilt.
+- **Social:** no chat and no user-generated text. Leaderboards show a display name, a cat and numbers.
 
-- Kids Category apps are placed into an age band by the developer: **5 and under, 6–8, or 9–11**. Apple's
-  formal bands stop at 11, while our stated audience goes to 13 — this needs an explicit decision: either
-  target the Kids Category strictly (framing the app for the ≤11 crowd) or position as a general-audience
-  app appropriate for younger users without opting into the Kids Category (loses that discoverability
-  shelf, but fits the full 5–13 range and eases some restrictions below).
-- **No third-party analytics or advertising** in the general case. Limited exceptions exist for analytics
-  that don't collect/transmit IDFA or any identifying info, and for contextual (non-behavioral) ads from
-  networks with documented Kids-Category policies and human-reviewed ad creative.
-- **No links out of the app, no purchase opportunities, no other "distractions"** unless placed behind a
-  parental gate (e.g. a simple math problem or typed confirmation an adult would need to complete).
-- **No PII or device info sent to third parties**, and general compliance with child-privacy laws
-  (e.g. COPPA in the US) around data collected from children.
-- Age rating is set via a questionnaire in App Store Connect; opting into "Made for Kids" there is a
-  one-way decision once approved — all future updates must keep meeting Kids Category rules.
+## Intellectual property: original characters only
 
-## What this means for design decisions already made
+Have an IP lawyer look at the game before launch. The working rules:
 
-- **IAP**: fine, but must sit behind a parental gate — this needs to be designed into the purchase flow
-  from the start, not bolted on later.
-- **Analytics/telemetry**: default third-party SDKs are likely off the table in their standard
-  configuration; plan for either a Kids-Category-compliant analytics provider or minimal first-party-only
-  telemetry.
-- **Notifications**: not directly an App Store compliance issue, but the "never wake the kid at night,
-  never guilt-trip framing" principle from the design doc aligns with the general spirit of the Kids
-  Category's child-safety intent, and is worth holding to regardless of which category we land in.
-- **Social features (leaderboards, rankings)**: need care — anything resembling chat, user-generated
-  content, or contact between children needs its own scrutiny pass; this hasn't been designed in detail
-  yet and should be revisited with these constraints in mind.
+- **No existing characters, in any form.** Creatures, names, logos, artwork, music and sound from another
+  company's monster-battling game are protected by copyright and trademark, and their owners enforce both
+  against free fan games as well as paid ones. Apple removes infringing apps and can close the developer
+  account. Re-drawn, recoloured or renamed versions of a recognisable character are still copies. Every animal
+  in Gotchi is our own design, starting with the cat.
+- **The genre is free, its expression is not.** Turn-based battles, types that beat each other, move lists,
+  stats, levels, wild encounters, leagues and trading are ideas, and ideas are not protected. What is protected
+  is the specific expression: character designs, names, distinctive move names, battle text, closely copied UI
+  layouts, maps, music. So our styles are CLAW / FLUFF / TRICK, our moves and items are our own words, and the
+  battle lines are written from scratch ("goes for", "a strong match-up", "is worn out").
+- **Trademarks:** another game's name or catchphrases never appear in the app's name, subtitle, keywords,
+  description or screenshots, not even as "like X".
+- **Patents:** game mechanics can be patented, and large publishers hold patents on specific mechanics (for
+  example capturing a creature by throwing an item at it, or riding creatures) and have sued over them. Plain
+  turn-based battling is not such a case, but a future catching or befriending mechanic gets a patent check
+  first.
+- **Inspiration is fine**, in internal documents too. Shipping assets, text or names is not.
 
-## Decisions (updated)
+## Economy
 
-- **Audience repositioned toward tweens/teens/nostalgic young adults**, not primarily under-13 — a real
-  shift in tone, marketing, and content, not just a rating label (see `01-vision.md`). This is what makes
-  skipping the Kids Category and aiming for a 13+ posture defensible.
-- **Not opting into the Kids Category.** Note the age rating itself is *calculated* from a content
-  questionnaire, not freely chosen — a cute pet-raising game may still calculate low regardless of
-  marketing intent, and Apple can override a declared rating if actual design/marketing still reads as
-  "for kids under 11" (Guideline 1.3). See `07-apple-compliance-questionnaire.md` for the full nuance.
-- **IAP planned for cosmetics/visual effects and bonuses** — fine under Apple's rules either way. A
-  lightweight purchase-confirmation step is being kept as good practice even without a strict Kids
-  Category mandate, since this genre draws younger players in practice regardless of marketing.
-- **Data collection limited to age (or age band) only** — no name, email, photos, or location. Stored as
-  a flag, not tied to persistent identifiers, never sent to third parties — a sound default regardless of
-  audience positioning.
+Two currencies, in one wallet box at the top left of the home screen.
 
-See `07-apple-compliance-questionnaire.md` for the full working checklist and decision log.
+| | **Coins** (the working currency) | **Hearts** (premium: the love the cat gives back) |
+|---|---|---|
+| **In** | ranked battles (25 × league on a win, 8 × league on a loss, streak up to +50%), first ranked win of the day +50, daily quests 30 to 80 each, promotions 100 to 500, selling at half price, login streak (10 × streak day, max 50), promo and invite codes | +5 per pet level, +10 every seventh streak day, promotions 5 to 25, all three daily quests +3, promo codes, bought with money |
+| **Out** | stat training (about 11,000 in all), moves (about 3,000), charms (1,700), battle items (30 to 90), helpers (150 each), Full Recovery (40), style change (150), Back Garden arena (400), outfits (120 to 250), backgrounds (300 to 350), room decor (150 to 200) | premium outfits (30, 80), Starry Night background (40), Sunset Beach arena (30), No Cooldowns 1 h (15), Double Rewards 1 h (20), Streak Shield (10), 500 Coins (20) |
+
+- **The rule: hearts never buy stats, moves, items, charms or rating.** Hearts can be bought, and the rating
+  board has to stay about play. Boosts shorten waits and multiply what a fight pays; they do not decide a fight.
+- **Real money** (App Store only): 50 / 150 / 400 Hearts, and a one-time Starter Pack (120 hearts, the Cozy
+  Beanie, the Snack Dispenser helper). In-game labels read "App Store" until the products exist.
+- **Left out on purpose:** loot boxes and any random paid reward, ads, progress gates that only money opens,
+  real-money items for the under-13 band, rating decay or anything else that punishes not playing.
+- **Why it hangs together:** every coin sink has a coin source, so a player who never pays reaches everything
+  except the premium looks. Battles are the biggest source and training is the biggest sink, so playing the game
+  is what pays for getting better at it.
+- The rules of what a battle pays are in `13-pvp-design.md`, section 5. Shop names say what you get ("500
+  Coins", "No Cooldowns"), never a nickname.
 
 ## Open questions
 
-- Whether to revisit the Kids Category decision once real usage data shows the actual audience age.
-- Which specific IAP items are planned in detail (cosmetics? boosts? currency packs?) — affects the
-  parental-gate flow design.
-- Legal/compliance review — this document is a planning aid, not legal advice; a proper review (COPPA,
-  GDPR-K if targeting EU, etc.) should happen before submission.
+- **Two leaks in the hearts rule.** The 500 Coins exchange turns bought hearts into training coins, and the
+  Starter Pack contains a helper (FEED lasts five battles instead of three). Options: drop both, cap the
+  exchange per day, or restate the rule as "power is never sold directly". Decide before real products exist.
+- Player-to-player trading (the Market's trade board is a mock today) needs a moderation plan, and a decision
+  on whether under-13 accounts can trade at all, before it goes live.
+- A monthly pass with exclusive outfits was floated. It needs StoreKit subscription handling and its own review.
+- Privacy policy, terms, COPPA and GDPR-K review before submission.
+- Whether to revisit the Kids Category once real usage shows the actual audience age.
 
-## Economy design (v0.1, 2026-09-13)
+## History
 
-Two currencies, shown top-left of the home screen:
-
-- **Coins (yellow)** — the play currency. Sources: care actions and cuddles (via level-ups), every
-  mini-game (25 win / 10 lose × tier multiplier), daily login streak (10 × streak day, max 50), promo and
-  invite codes. Sinks: helpers (automation, 150 each), Full Refill (40), room decor (150–200), background
-  sets (300–350), basic outfits (120–250).
-- **Hearts (pink; renamed from gems 2026-09-14 — hearts are the love the pet gives its owner, which fits the story)** — the premium currency. Sources from play are deliberate but slow: +5 per character
-  level, +10 on every 7th streak day, promo codes. Bought with real money in fixed packs. Sinks: premium
-  outfits (30–80), the Starry Night background (40), timed bonuses — *No Cooldowns* (1 h, 15), *Double
-  Rewards* (2× mini-game rewards for 1 h, 20) — *Streak Shield* (10), and a hearts→coins exchange (*500 Coins*,
-  20 hearts). Shop names state what you get; the cute nicknames (Zoomies, Lucky Hour, Treat Box) were dropped
-  on 2026-09-14 because players could not tell what they bought.
-
-**Real money** (App Store / StoreKit only): 50 / 150 / 400 Hearts, and a one-time *Starter Pack* (120 hearts +
-Cozy Beanie + Snack Dispenser). Prices are set in App Store Connect; the
-in-game labels show "App Store" until products exist. Planned later, not built: a monthly *Cozy Pass*
-(auto-renewing subscription with exclusive outfits and a permanent coin bonus) — needs StoreKit
-subscription handling and its own review.
-
-**Deliberately excluded:** loot boxes / gacha / any randomized paid reward, ads, pay-to-skip progression
-gates (boosts speed things up but nothing is locked behind money), real-money items for the under-13 age
-band (hidden entirely), and selling anything that affects other players (leaderboards stay skill-based).
-
-**Why it hangs together:** outfits and room items are visible on the pet and in the room (the emotional
-hook), boosts multiply time the player already spends, and every coin sink has a coin source, so a
-non-paying player can reach everything except premium outfits with patience.
+v0.1 assumed a 5 to 13 audience and weighed Apple's Kids Category (age bands up to 11, no third-party
+analytics or ads, a parental gate before any purchase or link out, a one-way "Made for Kids" flag). The
+audience was repositioned and the category declined; the conservative defaults above are what remains of it.
+Gems were renamed hearts on 2026-09-14. The shop's Full Refill became Full Recovery when the needs were removed.

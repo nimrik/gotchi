@@ -8,18 +8,18 @@ namespace Gotchi.Economy
     {
         private readonly PetSaveData _data;
         private readonly CurrencyWallet _wallet;
-        private readonly NeedsSystem _needs;
+        private readonly BattleSystem _battle;
         private readonly BoostSystem _boosts;
         private readonly IPurchaseService _purchases;
 
         public event Action<ShopItem> OnItemGranted;
         public event Action OnEquippedChanged;
 
-        public ShopService(PetSaveData data, CurrencyWallet wallet, NeedsSystem needs, BoostSystem boosts, IPurchaseService purchases)
+        public ShopService(PetSaveData data, CurrencyWallet wallet, BattleSystem battle, BoostSystem boosts, IPurchaseService purchases)
         {
             _data = data;
             _wallet = wallet;
-            _needs = needs;
+            _battle = battle;
             _boosts = boosts;
             _purchases = purchases;
         }
@@ -113,9 +113,8 @@ namespace Gotchi.Economy
                 case ShopItemKind.SoftCurrencyPack:
                     _wallet.Add(CurrencyType.Soft, item.Amount);
                     break;
-                case ShopItemKind.NeedRefill:
-                    foreach (NeedType need in Enum.GetValues(typeof(NeedType)))
-                        _needs.Set(need, item.Amount);
+                case ShopItemKind.NeedRefill:          // "Full Recovery" (the id and kind are from when it refilled the four needs)
+                    _battle.RecoverFully();
                     break;
                 case ShopItemKind.RewardBoost:
                     _boosts.ActivateRewardBoost(item.Hours);

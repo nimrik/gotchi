@@ -1,50 +1,58 @@
 # Gotchi — Roadmap
 
-Status: draft v0.1 — milestone shape only; no dates yet, since team velocity is unknown for a first project.
+Status: v0.2 (2026-09-21). Stages, not dates: two beginners at side-project pace, so velocity is unknown. The
+to-do list for each stage is `08-project-checklist.md`.
 
-## Phase 0 — Foundations (current phase)
-- Lock vision, core loop, and art direction enough to prototype.
-- Resolve open questions in `01`–`05` docs where they block a prototype (esp. basic needs list, skill-tree
-  categories, internal render resolution).
-- Gather concrete art references (mood board) before touching Unity.
+## Done
 
-## Phase 1 — Core loop prototype
-- Build the smallest possible playable slice: one pet, 4 basic needs, manual care, no art polish
-  (placeholder shapes are fine).
-- Goal: validate that the 2–3 minute session loop is actually satisfying before investing in art or
-  the skill tree.
-- No monetization, no notifications, no networking yet.
+- **Foundations.** Vision, audience, art direction for the cat, the UI language, the Unity project, the
+  build-in-code approach, the smoke test and capture tooling.
+- **Pet prototype** (2026-09-12 to 14). Needs, care, helpers, a skill tree with six mini-games, shop, story,
+  leaderboards, news, settings, onboarding. Most of it was later cut or reshaped; the shell survived.
+- **The cat** (2026-09-21). Rebuilt from the painted reference: model, rig, 27 clips, coats.
+- **The battle refocus** (2026-09-21). Battle rules, 15 moves, mana, items, charms, leagues, daily quests, the
+  Battle Club, the Market, health and mana that persist, the camp, leanings, the block bars. The Wild campaign
+  was built and parked. Emotions, needs and the other mini-games were removed.
 
-## Phase 2 — Progression layer
-- Add automation mechanics and the first version of the skill tree (even with 1–2 branches, not all of
-  sport/social/fashion/science).
-- First pass at evolution — even a single branch point is enough to validate the concept.
+## Stage 1 — Make the fight feel good (next)
 
-## Phase 3 — Art pass
-- Apply real art direction to the validated prototype (2D pixel world + 3D creature).
-- This is deliberately *after* the loop is validated, so art investment isn't wasted on mechanics that
-  might change.
+The rules exist; the fight does not feel like one yet.
 
-## Phase 4 — Retention & mini-games
-- First mini-game(s), login streak, notifications (with quiet-hours logic).
-- Leaderboards/social ranking — only after the compliance questions in `05` are resolved.
+- The six battle clips (defensive, attacking, screaming, healing, defeated, lightly wounded).
+- Battle effects and sound: hit sparks, style-coloured flashes, heal glow, a hit sound, a win jingle.
+- A balance pass on the rest loop, mana costs and the first leagues, played on a real iPhone.
+- Play the first hour end to end: onboarding, the first style, the first ten fights, Silver.
 
-## Phase 5 — Compliance & store readiness
-- IAP implementation behind a parental gate.
-- Kids Category decision finalized; privacy/analytics stack finalized to match.
-- Age rating questionnaire, App Store Connect setup.
+## Stage 2 — Depth for the first release
 
-## Phase 6 — Soft launch / beta
-- Limited release for real feedback before full marketing push.
+- What the evolution stages look like and unlock.
+- The story chapters rewritten for a fighter's journey.
+- More moves, charms and arenas if Stage 1 shows the build gets stale; rival charms in the top leagues.
+- Resolve the open monetization questions (`05-monetization-compliance.md`).
 
-## Explicitly deferred (not v1)
-- Hardcore (1:1 real-time) mode.
-- Multiple/simultaneous pets, breeding, trading.
-- Android release (planned as a genuine follow-up, not parallel).
-- Seasonal content system (needed eventually, not for MVP).
+## Stage 3 — Online
+
+- Accounts and cloud save (Supabase), real leaderboards and news.
+- Other players as rivals: asynchronous first (fight an AI copy of a real build), live PvP after.
+- Real trading, only once moderation and the under-13 question are settled.
+
+## Stage 4 — Store readiness
+
+StoreKit purchases with receipt validation, real notifications, the privacy policy and terms, the age rating
+questionnaire, the IP review, store metadata that matches the positioning, TestFlight.
+
+## Stage 5 — Soft launch
+
+A small release, a way to hear from players, tuning from real numbers before any marketing.
+
+## After the first release
+
+- **The world to explore**, growing out of the parked Wild campaign: a map, movement, encounters, and with it
+  **more characters**, all original.
+- Friend battles, tournaments, seasons, clubs (`13-pvp-design.md`, section 8).
+- Android. Hardcore mode. Several pets.
 
 ## Open questions
-- Realistic time budget — depends on both team members' available hours per week, which hasn't been
-  discussed yet.
-- Whether to timebox Phase 0/1 (e.g. "no more than N weeks before a playable prototype exists") to avoid
-  over-planning before anything is testable.
+
+- Whether to timebox Stage 1 so it does not turn into endless polish before anyone outside has played.
+- What is the smallest online feature set worth a first release: is the mock ladder enough for a soft launch?

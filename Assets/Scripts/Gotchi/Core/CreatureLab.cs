@@ -65,7 +65,7 @@ namespace Gotchi.Core
             {
                 float nx = 0.14f + (i % 4) * 0.24f, ny = 0.86f - (i / 4) * 0.23f;
                 var cell = Cell(page, nx, ny);
-                new PetPortraitView(cell, species[i], this, 190f).SetEmotion(EmotionType.Joy, false);
+                new PetPortraitView(cell, species[i], this, 190f).SetFace(EmotionType.Joy, false);
                 var label = UIFactory.CreateText("Name", cell, species[i].ToString(), 22, UIFactory.Ink, TextAnchor.MiddleCenter, true);
                 label.rectTransform.anchoredPosition = new Vector2(0f, -190f);
                 label.rectTransform.sizeDelta = new Vector2(220f, 40f);
@@ -86,7 +86,7 @@ namespace Gotchi.Core
                 float nx = 0.14f + (i % 4) * 0.24f, ny = 0.88f - (i / 4) * 0.235f;
                 var cell = Cell(page, nx, ny);
                 var pet = new PetPortraitView(cell, SpeciesType.Cat, this, 180f);
-                pet.SetEmotion(emotions[i], false);
+                pet.SetFace(emotions[i], false);
                 var label = UIFactory.CreateText("Name", cell, emotions[i].ToString(), 22, UIFactory.Ink, TextAnchor.MiddleCenter, true);
                 label.rectTransform.anchoredPosition = new Vector2(0f, -180f);
                 label.rectTransform.sizeDelta = new Vector2(220f, 40f);
@@ -98,7 +98,7 @@ namespace Gotchi.Core
             page = Page(UIFactory.Hex("FFF4E8"));
             var big = Cell(page, 0.5f, 0.55f);
             var hero = new PetPortraitView(big, SpeciesType.Cat, this, 560f);
-            hero.SetEmotion(EmotionType.Satisfaction, false);
+            hero.SetFace(EmotionType.Satisfaction, false);
             if (hero.Is3D)
             {
                 yield return Run3D(hero);
@@ -123,10 +123,8 @@ namespace Gotchi.Core
             hero.Animator.SetStance(Stance.Lie, 60f);
             yield return new WaitForSeconds(1.6f);
             yield return Shot("lab-lie.png");
-            hero.SetConditions(20f, 20f, 20f, 100f);
             yield return new WaitForSeconds(2f);
             yield return Shot("lab-sleep.png");
-            hero.SetConditions(100f, 100f, 100f, 100f);
             hero.Animator.SetStance(Stance.Stand, 60f);
             yield return new WaitForSeconds(1.5f);
             hero.Play(OneShot.Stretch);
@@ -148,7 +146,7 @@ namespace Gotchi.Core
             hero.Play(OneShot.Attack, 1f);
             yield return Burst("lab-attack", 8, 0.07f);
             yield return new WaitForSeconds(1.2f);
-            hero.SetEmotion(EmotionType.Joy, true);
+            hero.SetFace(EmotionType.Joy, true);
             yield return Burst("lab-joy", 6, 0.3f);
             hero.Play(OneShot.Faint, 1f);
             yield return new WaitForSeconds(1f);
@@ -177,25 +175,23 @@ namespace Gotchi.Core
             yield return new WaitForSeconds(1.5f);
             cat.WalkTo(0f, 1.2f);
             yield return new WaitForSeconds(1.6f);
-            hero.SetEmotion(EmotionType.Joy, true);
+            hero.SetFace(EmotionType.Joy, true);
             yield return Burst("lab-joy", 6, 0.3f);
-            hero.SetEmotion(EmotionType.Sorrow, true);
+            hero.SetFace(EmotionType.Sorrow, true);
             yield return new WaitForSeconds(1.2f);
             yield return Shot("lab-sad.png");
-            hero.SetEmotion(EmotionType.Rage, true);
+            hero.SetFace(EmotionType.Rage, true);
             yield return new WaitForSeconds(1.2f);
             yield return Shot("lab-angry.png");
-            hero.SetEmotion(EmotionType.Curiosity, true);
+            hero.SetFace(EmotionType.Curiosity, true);
             yield return new WaitForSeconds(1.2f);
             yield return Shot("lab-curious.png");
-            hero.SetEmotion(EmotionType.Love, true);
+            hero.SetFace(EmotionType.Love, true);
             yield return new WaitForSeconds(1.2f);
             yield return Shot("lab-love.png");
-            hero.SetEmotion(EmotionType.Satisfaction, false);
-            hero.SetConditions(20f, 20f, 20f, 100f);
+            hero.SetFace(EmotionType.Satisfaction, false);
             yield return new WaitForSeconds(2f);
             yield return Shot("lab-sleep.png");
-            hero.SetConditions(100f, 100f, 100f, 100f);
             yield return new WaitForSeconds(1f);
             hero.Play(OneShot.Stretch);
             yield return Burst("lab-stretch", 8, 0.18f);
@@ -234,7 +230,6 @@ namespace Gotchi.Core
             yield return new WaitForSeconds(0.3f);
             yield return Shot("lab-crown.png");
             hero.SetAccessory("");
-            hero.SetConditions(100f, 20f, 100f, 20f);
             yield return new WaitForSeconds(1f);
             yield return Shot("lab-dirty.png");
             yield return new WaitForSeconds(0.3f);

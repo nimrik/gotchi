@@ -14,14 +14,16 @@ namespace Gotchi.Systems
     {
         public List<NewsItem> All() => new List<NewsItem>
         {
+            new NewsItem { Id = "n5", Category = NewsCategory.Update, Title = "The camp", DateUtc = new DateTime(2026, 9, 21),
+                Body = "REST, FOCUS, FEED and GROOM get your cat ready for the next fight. Nothing runs down while you are away." },
             new NewsItem { Id = "n4", Category = NewsCategory.Event, Title = "Battle weekend", DateUtc = new DateTime(2026, 9, 14),
-                Body = "PvP battles pay double XP until Sunday. Pick your moves wisely!" },
+                Body = "Ranked battles pay double XP until Sunday. Pick your moves wisely!" },
             new NewsItem { Id = "n3", Category = NewsCategory.Update, Title = "New look", DateUtc = new DateTime(2026, 9, 13),
-                Body = "Menus, buttons and the care dock now wear their crisp new boxes. Tell us what you think." },
-            new NewsItem { Id = "n2", Category = NewsCategory.BugFix, Title = "Bouncy bubble fixed", DateUtc = new DateTime(2026, 9, 12),
-                Body = "Tapping your friend many times no longer sends the mood bubble across the room." },
+                Body = "Menus, buttons and the camp now wear their crisp new boxes. Tell us what you think." },
+            new NewsItem { Id = "n2", Category = NewsCategory.BugFix, Title = "Too many pokes", DateUtc = new DateTime(2026, 9, 12),
+                Body = "Tapping your cat no longer changes its face at random. Poke it too much and it walks off for a moment." },
             new NewsItem { Id = "n1", Category = NewsCategory.Announcement, Title = "Welcome to Gotchi", DateUtc = new DateTime(2026, 9, 10),
-                Body = "Thanks for adopting a friend. Feed, clean, play and rest to keep them happy, and train a skill each day." },
+                Body = "Thanks for taking a cat in. Pick a fighting style, train, and climb the leagues of the Battle Club." },
         };
     }
 
